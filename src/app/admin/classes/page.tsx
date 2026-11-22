@@ -12,7 +12,7 @@ import { GraduationCap, Plus, Edit, Trash2, Users, UserPlus, ChevronRight } from
 import { Profile, SchoolClass, Student } from '@/types';
 import { formatClassName } from '@/lib/config';
 import { getCachedProfile } from '@/lib/auth-cache';
-import { syncApprovedParentRequests } from '@/lib/sync-students';
+import { syncApprovedParentRequests, deleteStudentCompletely } from '@/lib/sync-students';
 
 export default function AdminClassesPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -83,13 +83,16 @@ export default function AdminClassesPage() {
   };
 
   const handleDeleteStudentInClass = async (id: string, fullName: string) => {
-    if (!confirm(`${fullName} adlı şagirdi sistemdən silmək istədiyinizdən əminsiniz?`)) return;
+    if (!confirm(`${fullName} adlı şagirdi sistemdən tamamilə silmək istədiyinizdən əminsiniz?`)) return;
 
-    const supabase = createClient();
-    const { error } = await supabase.from('students').delete().eq('id', id);
-    if (error) {
-      await supabase.from('students').update({ is_archived: true }).eq('id', id);
-    }
+    // UI-dan dərhal çıxarırıq
+    setClassStudents((prev) => prev.filter((s) => s.id !== id));
+
+    const parts = fullName.trim().split(' ');
+    const fName = parts[0] || '';
+    const lName = parts.slice(1).join(' ') || '';
+
+    await deleteStudentCompletely(id, fName, lName);
 
     if (selectedClassForStudents) {
       await handleOpenClassStudents(selectedClassForStudents);

@@ -60,7 +60,14 @@ export default function AdminUsersPage() {
     }
     if (!confirm(`${userName} adlı istifadəçini sistemdən silmək istədiyinizdən əminsiniz?`)) return;
 
+    // UI-dan dərhal çıxarırıq
+    setUsers((prev) => prev.filter((u) => u.id !== userId));
+
     const supabase = createClient();
+    await supabase.from('parent_student_links').delete().eq('parent_id', userId);
+    await supabase.from('parent_connection_requests').delete().eq('parent_id', userId);
+    await supabase.from('teacher_assignments').delete().eq('teacher_id', userId);
+
     const { error } = await supabase.from('profiles').delete().eq('id', userId);
     if (error) {
       await supabase.from('profiles').update({ is_active: false }).eq('id', userId);

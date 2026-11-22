@@ -12,7 +12,7 @@ import { UserCheck, Plus, Search, Edit, Trash2, Key } from 'lucide-react';
 import { Profile, Student, SchoolClass } from '@/types';
 import { formatClassName } from '@/lib/config';
 import { getCachedProfile } from '@/lib/auth-cache';
-import { syncApprovedParentRequests } from '@/lib/sync-students';
+import { syncApprovedParentRequests, deleteStudentCompletely } from '@/lib/sync-students';
 
 export default function AdminStudentsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -123,12 +123,16 @@ export default function AdminStudentsPage() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`${name} adlı şagirdi sistemdən silmək istədiyinizdən əminsiniz?`)) return;
-    const supabase = createClient();
-    const { error } = await supabase.from('students').delete().eq('id', id);
-    if (error) {
-      await supabase.from('students').update({ is_archived: true }).eq('id', id);
-    }
+    if (!confirm(`${name} adlı şagirdi sistemdən tamamilə silmək istədiyinizdən əminsiniz?`)) return;
+
+    // UI-dan dərhal çıxarırıq
+    setStudents((prev) => prev.filter((s) => s.id !== id));
+
+    const parts = name.trim().split(' ');
+    const fName = parts[0] || '';
+    const lName = parts.slice(1).join(' ') || '';
+
+    await deleteStudentCompletely(id, fName, lName);
     await fetchData();
   };
 

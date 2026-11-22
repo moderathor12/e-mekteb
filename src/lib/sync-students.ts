@@ -9,7 +9,7 @@ export async function syncApprovedParentRequests(): Promise<void> {
   const supabase = createClient();
 
   try {
-    // 1. Təsdiqlənmiş müraciətləri alırıq
+    // 1. Yalnız təsdiqlənmiş müraciətləri alırıq
     const { data: approvedReqs, error: reqErr } = await supabase
       .from('parent_connection_requests')
       .select('*')
@@ -31,18 +31,17 @@ export async function syncApprovedParentRequests(): Promise<void> {
       const fName = (req.student_first_name || '').trim().toLowerCase();
       const lName = (req.student_last_name || '').trim().toLowerCase();
 
-      // Mövcud şagirdi axtarırıq
+      // Mövcud şagirdi axtarırıq (həm aktiv, həm də arxivdə)
       let student = existingStudents.find(
         (s) =>
           s.first_name.trim().toLowerCase() === fName &&
           s.last_name.trim().toLowerCase() === lName
       );
 
-      // Əgər şagird yoxdursa və sinif mövcuddursa, yaradırıq
+      // Əgər şagird bazada ümumiyyətlə yoxdursa və sinif varsa, yaradırıq
       if (!student && defaultClassId) {
         let targetClassId = req.class_id;
 
-        // Əgər müraciətdə class_id yoxdursa amma student_code və ya başqa ipucu varsa
         if (!targetClassId && req.student_code) {
           const matched = availableClasses.find((c) =>
             c.name.toLowerCase().includes(req.student_code.toLowerCase())
@@ -75,7 +74,6 @@ export async function syncApprovedParentRequests(): Promise<void> {
           student = created;
           existingStudents.push(created);
 
-          // Əgər müraciətdə class_id boş idisə, onu da sinifə bağlayaq
           if (!req.class_id && targetClassId) {
             await supabase
               .from('parent_connection_requests')
@@ -102,5 +100,61 @@ export async function syncApprovedParentRequests(): Promise<void> {
     }
   } catch (err) {
     console.error('syncApprovedParentRequests exception:', err);
+  }
+}
+
+/**
+ * Şagirdi sistemdən tamamilə silir:
+ * 1. parent_student_links əlaqələrini silir
+ * 2. assessments qeydlərini silir
+ * 3. Əlaqəli parent_connection_requests qeydlərini silir (ki, təkrar bərpa olunmasın)
+ * 4. students cədvəlindən şagirdi silir
+ */
+export async function deleteStudentCompletely(id: string, firstName?: string, lastName?: string): Promise<boolean> {
+  const supabase = createClient();
+
+  try {
+    let fName = firstName;
+    let lName = lastName;
+
+    if (!fName || !lName) {
+      const { data: st } = await supabase
+        .from('students')
+        .select('first_name, last_name')
+        .eq('id', id)
+        .maybeSingle();
+      if (st) {
+        fName = st.first_name;
+        lName = st.last_name;
+      }
+    }
+
+    // 1. Əlaqəli valideyn bağlantılarını silirik
+    await supabase.from('parent_student_links').delete().eq('student_id', id);
+
+    // 2. Qiymətləndirmələri silirik
+    await supabase.from('assessments').delete().eq('student_id', id);
+
+    // 3. Əlaqəli valideyn müraciətlərini silirik
+    if (fName && lName) {
+      await supabase
+        .from('parent_connection_requests')
+        .delete()
+        .ilike('student_first_name', fName.trim())
+        .ilike('student_last_name', lName.trim());
+    }
+
+    // 4. Şagirdi bazadan silirik
+    const { error: delError } = await supabase.from('students').delete().eq('id', id);
+
+    if (delError) {
+      console.warn('Direct delete failed, marking archived:', delError);
+      await supabase.from('students').update({ is_archived: true }).eq('id', id);
+    }
+
+    return true;
+  } catch (err) {
+    console.error('deleteStudentCompletely error:', err);
+    return false;
   }
 }
