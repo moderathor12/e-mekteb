@@ -104,6 +104,22 @@ export default function AdminTeachersPage() {
     await fetchData();
   };
 
+  const handleToggleStatus = async (teacherId: string, currentStatus?: boolean) => {
+    const isCurrentlyActive = currentStatus !== false;
+    const supabase = createClient();
+    const { error } = await supabase
+      .from('profiles')
+      .update({ is_active: !isCurrentlyActive })
+      .eq('id', teacherId);
+
+    if (error) {
+      alert('Xəta: ' + error.message);
+    } else {
+      alert(!isCurrentlyActive ? 'Müəllim hesabı aktivləşdirildi!' : 'Müəllim hesabı deaktiv edildi.');
+      await fetchData();
+    }
+  };
+
   return (
     <DashboardLayout profile={profile}>
       <div className="space-y-6">
@@ -125,6 +141,7 @@ export default function AdminTeachersPage() {
                 <th className="px-6 py-3.5">Müəllim</th>
                 <th className="px-6 py-3.5">E-poçt</th>
                 <th className="px-6 py-3.5">Rol</th>
+                <th className="px-6 py-3.5">Status</th>
                 <th className="px-6 py-3.5">Təyin Olunduğu Siniflər və Fənlər</th>
                 <th className="px-6 py-3.5 text-right">Əməliyyatlar</th>
               </tr>
@@ -132,19 +149,20 @@ export default function AdminTeachersPage() {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
                     Yüklənir...
                   </td>
                 </tr>
               ) : teachers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
                     Müəllim tapılmadı.
                   </td>
                 </tr>
               ) : (
                 teachers.map((t) => {
                   const teacherAssignments = assignments.filter((a) => a.teacher_id === t.id);
+                  const isActive = t.is_active !== false;
                   return (
                     <tr key={t.id} className="hover:bg-slate-50/80">
                       <td className="px-6 py-4 font-bold text-slate-900">
@@ -155,6 +173,20 @@ export default function AdminTeachersPage() {
                         <Badge variant={t.role === 'admin' ? 'purple' : 'blue'}>
                           {t.role === 'admin' ? 'Admin' : 'Müəllim'}
                         </Badge>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStatus(t.id, t.is_active)}
+                          className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                            isActive
+                              ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                              : 'bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold border border-rose-200'
+                          }`}
+                          title="Statusu dəyişmək üçün klikləyin"
+                        >
+                          {isActive ? 'Aktiv' : 'Deaktiv (Aktiv et)'}
+                        </button>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-wrap gap-1.5">
