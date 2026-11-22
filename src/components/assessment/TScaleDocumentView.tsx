@@ -20,11 +20,16 @@ export function TScaleDocumentView({ assessment, showPrintButton = true }: TScal
     window.print();
   };
 
-  const formattedDate = new Date(assessment.assessment_date).toLocaleDateString('az-AZ', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+  const formatDdMmYyyy = (dateStr?: string) => {
+    if (!dateStr) return '—';
+    const parts = dateStr.split('T')[0].split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`; // 22/11/2026
+    }
+    return dateStr;
+  };
+
+  const formattedDate = formatDdMmYyyy(assessment.assessment_date);
 
   return (
     <div className="space-y-4">
@@ -146,11 +151,11 @@ export function TScaleDocumentView({ assessment, showPrintButton = true }: TScal
           </div>
         </div>
 
-        {/* Növbəti addım / Müəllim qeydi */}
+        {/* Müəllim qeydi */}
         <div className="mb-4 bg-slate-50 border border-slate-200 rounded-lg p-4">
           <h4 className="text-xs uppercase font-bold text-slate-700 tracking-wider mb-1 flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-indigo-600 inline-block"></span>
-            Növbəti addım / müəllim qeydi:
+            Müəllim qeydi:
           </h4>
           <p className="text-sm text-slate-800 whitespace-pre-line leading-relaxed">
             {assessment.next_step || '—'}

@@ -163,7 +163,7 @@ export default function TeacherReportsPage() {
 
                   {item.next_step && (
                     <div className="text-xs bg-slate-50 p-2.5 rounded border border-slate-100">
-                      <strong className="text-slate-700">Növbəti addım:</strong> {item.next_step}
+                      <strong className="text-slate-700">Müəllim qeydi:</strong> {item.next_step}
                     </div>
                   )}
                 </div>

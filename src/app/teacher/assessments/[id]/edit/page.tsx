@@ -34,7 +34,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
         const [clsRes, subRes, stRes, asmRes] = await Promise.all([
           supabase.from('classes').select('*').eq('is_archived', false),
           supabase.from('subjects').select('*').eq('is_archived', false),
-          supabase.from('students').select('*').eq('is_archived', false),
+          supabase.from('students').select('*'),
           supabase
             .from('assessments')
             .select('*, feedback_items(*)')
@@ -42,9 +42,11 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
             .single(),
         ]);
 
+        const activeStudents = (stRes.data || []).filter((s) => s.is_archived !== true);
+
         setClasses(clsRes.data || []);
         setSubjects(subRes.data || []);
-        setStudents(stRes.data || []);
+        setStudents(activeStudents);
         setAssessment(asmRes.data || null);
       }
       setIsLoading(false);

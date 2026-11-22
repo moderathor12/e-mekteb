@@ -7,7 +7,30 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
-import { Plus, Trash2, CheckCircle2, AlertCircle, Save, Send, Sparkles, Users, Check, Search } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, AlertCircle, Save, Send, Sparkles, Users, Check, Search, Calendar } from 'lucide-react';
+
+const formatDateToDisplay = (isoStr: string) => {
+  if (!isoStr) return '';
+  const parts = isoStr.split('T')[0].split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`; // 22/11/2026
+  }
+  return isoStr;
+};
+
+const parseDisplayToIso = (displayStr: string) => {
+  const clean = displayStr.trim().replace(/[.-]/g, '/');
+  const parts = clean.split('/');
+  if (parts.length === 3) {
+    const d = parts[0].padStart(2, '0');
+    const m = parts[1].padStart(2, '0');
+    const y = parts[2];
+    if (y.length === 4) {
+      return `${y}-${m}-${d}`;
+    }
+  }
+  return displayStr;
+};
 
 interface TScaleFormProps {
   classes: SchoolClass[];
@@ -34,6 +57,9 @@ export function TScaleForm({
   const [standard, setStandard] = useState<string>(initialData?.standard || '');
   const [assessmentDate, setAssessmentDate] = useState<string>(
     initialData?.assessment_date || new Date().toISOString().split('T')[0]
+  );
+  const [displayDate, setDisplayDate] = useState<string>(() =>
+    formatDateToDisplay(initialData?.assessment_date || new Date().toISOString().split('T')[0])
   );
 
   // Müsbət tərəflər (+) siyahısı
@@ -132,13 +158,15 @@ export function TScaleForm({
       return;
     }
 
+    const resolvedIsoDate = parseDisplayToIso(displayDate) || assessmentDate;
+
     const payload = {
       class_id: selectedClassId,
       subject_id: selectedSubjectId,
       student_id: selectedStudentId,
       topic,
       standard,
-      assessment_date: assessmentDate,
+      assessment_date: resolvedIsoDate,
       positive_feedback: positiveList,
       development_feedback: developmentList,
       next_step: nextStep,
@@ -190,20 +218,9 @@ export function TScaleForm({
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-slate-700">Şagird (Fərdi Qiymətləndirmə) *</label>
-              <button
-                type="button"
-                onClick={() => {
-                  setModalClassFilter(selectedClassId);
-                  setIsStudentModalOpen(true);
-                }}
-                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors"
-                title="Şagird siyahısını aç və seç"
-              >
-                <Users className="w-3.5 h-3.5" /> Şagird Seç
-              </button>
-            </div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Şagird (Fərdi Qiymətləndirmə) *
+            </label>
             <select
               value={selectedStudentId}
               onChange={(e) => setSelectedStudentId(e.target.value)}
@@ -217,24 +234,7 @@ export function TScaleForm({
               ))}
             </select>
             {classStudents.length === 0 && selectedClassId && (
-              <p className="text-xs text-amber-600 mt-1">
-                Bu sinifdə aktiv şagird tapılmadı.{' '}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setModalClassFilter('');
-                    setIsStudentModalOpen(true);
-                  }}
-                  className="underline font-semibold text-indigo-600 hover:text-indigo-800"
-                >
-                  Şagird siyahısını aç
-                </button>
-              </p>
-            )}
-            {selectedStudent && (
-              <p className="text-xs text-emerald-700 font-semibold mt-1 flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Seçildi: {selectedStudent.first_name} {selectedStudent.last_name} ({selectedStudent.student_code})
-              </p>
+              <p className="text-xs text-amber-600 mt-1">Bu sinifdə aktiv şagird tapılmadı.</p>
             )}
           </div>
         </div>
@@ -257,12 +257,39 @@ export function TScaleForm({
             />
           </div>
           <div>
-            <Input
-              label="Tarix *"
-              type="date"
-              value={assessmentDate}
-              onChange={(e) => setAssessmentDate(e.target.value)}
-            />
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Tarix (gün/ay/il) *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="22/11/2026"
+                value={displayDate}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setDisplayDate(val);
+                  const iso = parseDisplayToIso(val);
+                  if (iso.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    setAssessmentDate(iso);
+                  }
+                }}
+                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500 font-medium"
+              />
+              <label className="absolute right-2.5 top-2.5 cursor-pointer text-slate-400 hover:text-indigo-600" title="Təqvimdən seç">
+                <Calendar className="w-4 h-4" />
+                <input
+                  type="date"
+                  value={assessmentDate}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setAssessmentDate(e.target.value);
+                      setDisplayDate(formatDateToDisplay(e.target.value));
+                    }
+                  }}
+                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer pointer-events-auto"
+                />
+              </label>
+            </div>
           </div>
         </div>
       </Card>
@@ -435,18 +462,18 @@ export function TScaleForm({
         </div>
       </div>
 
-      {/* 3. Növbəti addım və Ümumi müşahidə */}
-      <Card title="3. Növbəti Addımlar və Nəticə" subtitle="Müəllimin tövsiyələri və ümumi qiymətləndirmə xülasəsi">
+      {/* 3. Müəllim qeydi və Ümumi müşahidə */}
+      <Card title="3. Müəllim Qeydi və Nəticə" subtitle="Müəllimin tövsiyələri və ümumi qiymətləndirmə xülasəsi">
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
-              Növbəti addım / müəllim qeydi
+              Müəllim qeydi
             </label>
             <textarea
               rows={2}
               value={nextStep}
               onChange={(e) => setNextStep(e.target.value)}
-              placeholder="Şagirdin növbəti mərhələdə nə etməli olduğu barədə qeyd..."
+              placeholder="Şagirdin nailiyyətləri, inkişafı və tövsiyələr barədə müəllim qeydi..."
               className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-indigo-500"
             />
             <div className="flex flex-wrap gap-1.5 mt-1.5">

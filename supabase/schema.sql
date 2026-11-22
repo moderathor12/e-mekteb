@@ -351,7 +351,7 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "İstifadəçilər öz profillərinə baxa bilər" ON public.profiles;
 CREATE POLICY "İstifadəçilər öz profillərinə baxa bilər"
     ON public.profiles FOR SELECT
-    USING (auth.uid() = id OR public.is_admin() OR public.is_teacher());
+    USING (auth.uid() = id OR public.is_admin() OR public.is_teacher() OR role IN ('teacher', 'admin'));
 
 DROP POLICY IF EXISTS "Adminlər bütün profilləri idarə edə bilər" ON public.profiles;
 CREATE POLICY "Adminlər bütün profilləri idarə edə bilər"

@@ -32,7 +32,17 @@ export default function ParentAssessmentDetailPage({ params }: { params: Promise
 
         if (error) {
           console.error(error);
-        } else {
+        } else if (asm) {
+          if (!asm.teacher && asm.teacher_id) {
+            const { data: teacherProf } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', asm.teacher_id)
+              .maybeSingle();
+            if (teacherProf) {
+              asm.teacher = teacherProf;
+            }
+          }
           setAssessment(asm);
         }
       }

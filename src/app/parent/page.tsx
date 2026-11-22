@@ -280,7 +280,7 @@ export default function ParentDashboardPage() {
 
                 {latestAssessment.next_step && (
                   <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-800">
-                    <strong className="text-indigo-900 block mb-0.5">Növbəti addım / Müəllim tövsiyəsi:</strong>
+                    <strong className="text-indigo-900 block mb-0.5">Müəllim qeydi:</strong>
                     {latestAssessment.next_step}
                   </div>
                 )}
