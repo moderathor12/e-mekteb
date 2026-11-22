@@ -73,7 +73,19 @@ export function Sidebar({ role }: SidebarProps) {
     <aside className="w-64 bg-white border-r border-slate-200 flex-shrink-0 min-h-[calc(100vh-4rem)] hidden md:block no-print">
       <div className="p-4 space-y-1">
         {currentNav.map((item) => {
-          const isActive = pathname === item.href || (item.href !== '/admin' && item.href !== '/teacher' && item.href !== '/parent' && pathname.startsWith(item.href));
+          const isExact = pathname === item.href;
+          const isSubRoute =
+            item.href !== '/admin' &&
+            item.href !== '/teacher' &&
+            item.href !== '/parent' &&
+            pathname.startsWith(item.href + '/') &&
+            !currentNav.some(
+              (other) =>
+                other.href !== item.href &&
+                pathname.startsWith(other.href) &&
+                other.href.length > item.href.length
+            );
+          const isActive = isExact || isSubRoute;
           const Icon = item.icon;
 
           return (
