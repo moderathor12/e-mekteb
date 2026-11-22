@@ -57,7 +57,7 @@ export default function ParentAssessmentsPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from('assessments')
-      .select('*, subject:subjects(*), class:classes(*), teacher:profiles(*), feedback_items(*)')
+      .select('*, subject:subjects(*), class:classes(*), teacher:profiles!teacher_id(*), feedback_items(*)')
       .eq('student_id', childId)
       .eq('status', 'published')
       .order('assessment_date', { ascending: false });

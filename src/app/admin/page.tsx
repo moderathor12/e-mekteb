@@ -21,6 +21,8 @@ import {
   School
 } from 'lucide-react';
 import { Profile, SchoolClass, Student, Assessment, ParentConnectionRequest } from '@/types';
+import { getSchoolName } from '@/lib/config';
+import { getCachedProfile } from '@/lib/auth-cache';
 
 export default function AdminDashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -37,12 +39,10 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const prof = await getCachedProfile();
+      setProfile(prof);
 
-      if (user) {
-        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        setProfile(prof);
+      const supabase = createClient();
 
         // Statistik göstəriciləri hesabla
         const [
@@ -61,12 +61,12 @@ export default function AdminDashboardPage() {
           supabase.from('assessments').select('*', { count: 'exact', head: true }).eq('status', 'published'),
           supabase
             .from('parent_connection_requests')
-            .select('*, parent:profiles(*), class:classes(*)')
+            .select('*, parent:profiles!parent_id(*), class:classes(*)')
             .order('created_at', { ascending: false })
             .limit(5),
           supabase
             .from('assessments')
-            .select('*, student:students(*), subject:subjects(*), class:classes(*), teacher:profiles(*)')
+            .select('*, student:students(*), subject:subjects(*), class:classes(*), teacher:profiles!teacher_id(*)')
             .order('created_at', { ascending: false })
             .limit(5),
         ]);
@@ -81,8 +81,7 @@ export default function AdminDashboardPage() {
 
         setRecentRequests(reqs || []);
         setRecentAssessments(asms || []);
-      }
-      setIsLoading(false);
+        setIsLoading(false);
     }
 
     load();
@@ -96,7 +95,7 @@ export default function AdminDashboardPage() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Məktəb İdarəetmə Mərkəzi</h1>
             <p className="text-sm text-slate-500 mt-1">
-              Məktəb: <strong>{process.env.NEXT_PUBLIC_SCHOOL_NAME || '1 nömrəli Tam Orta Məktəb'}</strong>
+              Məktəb: <strong>{getSchoolName()}</strong>
             </p>
           </div>
 

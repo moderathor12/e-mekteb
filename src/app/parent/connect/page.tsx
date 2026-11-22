@@ -72,23 +72,10 @@ export default function ParentConnectPage() {
           c.grade_level === gradeNum
       );
 
-      if (!targetClass) {
-        const { data: newCls } = await supabase
-          .from('classes')
-          .insert({
-            name: selectedClassName,
-            grade_level: gradeNum,
-            academic_year: '2026-2027',
-          })
-          .select()
-          .single();
-        if (newCls) targetClass = newCls;
-      }
-
-      // Müraciəti qeyd edirik
+      // Müraciəti qeyd edirik (student_code sahəsində sinif adı etibarlı şəkildə saxlanılır)
       const { error: reqErr } = await supabase.from('parent_connection_requests').insert({
         parent_id: profile.id,
-        student_code: selectedClassName, // baza uyğunluğu üçün sinif adını saxlayırıq
+        student_code: selectedClassName,
         student_first_name: trimmedFirst,
         student_last_name: trimmedLast,
         class_id: targetClass?.id || null,

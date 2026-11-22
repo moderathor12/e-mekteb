@@ -434,23 +434,30 @@ CREATE POLICY "Valideynlər öz əlaqələrini görür"
 
 -- 7.7 Parent Connection Requests Siyasətləri
 DROP POLICY IF EXISTS "Adminlər bütün müraciətləri idarə edir" ON public.parent_connection_requests;
-CREATE POLICY "Adminlər bütün müraciətləri idarə edir"
-    ON public.parent_connection_requests FOR ALL
-    USING (public.is_admin());
-
 DROP POLICY IF EXISTS "Valideynlər öz müraciətlərini görür və göndərir" ON public.parent_connection_requests;
-CREATE POLICY "Valideynlər öz müraciətlərini görür və göndərir"
-    ON public.parent_connection_requests FOR INSERT
-    WITH CHECK (auth.uid() = parent_id);
-
-CREATE POLICY "Valideynlər öz müraciətlərinin statusuna baxır"
-    ON public.parent_connection_requests FOR SELECT
-    USING (auth.uid() = parent_id OR public.is_admin());
-
+DROP POLICY IF EXISTS "Valideynlər öz müraciətlərinin statusuna baxır" ON public.parent_connection_requests;
 DROP POLICY IF EXISTS "Müəllimlər öz siniflərinə aid müraciətlərə baxa və qərar verə bilər" ON public.parent_connection_requests;
-CREATE POLICY "Müəllimlər öz siniflərinə aid müraciətlərə baxa və qərar verə bilər"
-    ON public.parent_connection_requests FOR ALL
-    USING (class_id IS NOT NULL AND public.has_teacher_class_access(class_id));
+
+CREATE POLICY "Valideynlər müraciət göndərir"
+    ON public.parent_connection_requests FOR INSERT
+    WITH CHECK (auth.uid() = parent_id OR public.is_admin());
+
+CREATE POLICY "Müraciətlərə baxış icazəsi"
+    ON public.parent_connection_requests FOR SELECT
+    USING (
+        auth.uid() = parent_id OR 
+        public.is_admin() OR 
+        public.is_teacher() OR
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
+    );
+
+CREATE POLICY "Admin və müəllimlər müraciətləri təsdiqləyir"
+    ON public.parent_connection_requests FOR UPDATE
+    USING (
+        public.is_admin() OR 
+        public.is_teacher() OR
+        EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'teacher'))
+    );
 
 -- 7.8 Assessments (T-Şkala) Siyasətləri
 -- Admin: Tam nəzarət

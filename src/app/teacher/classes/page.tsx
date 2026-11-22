@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { GraduationCap, Users, CalendarCheck, ArrowRight } from 'lucide-react';
 import { Profile, SchoolClass, Student } from '@/types';
 import { formatClassName } from '@/lib/config';
+import { getCachedProfile } from '@/lib/auth-cache';
 
 export default function TeacherClassesPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -18,17 +19,14 @@ export default function TeacherClassesPage() {
 
   useEffect(() => {
     async function load() {
+      const prof = await getCachedProfile();
+      setProfile(prof);
+
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        setProfile(prof);
-
-        const [clsRes, stRes] = await Promise.all([
-          supabase.from('classes').select('*').eq('is_archived', false).order('grade_level'),
-          supabase.from('students').select('*').eq('is_archived', false).order('first_name'),
-        ]);
+      const [clsRes, stRes] = await Promise.all([
+        supabase.from('classes').select('*').eq('is_archived', false).order('grade_level'),
+        supabase.from('students').select('*').eq('is_archived', false).order('first_name'),
+      ]);
 
         setClasses(clsRes.data || []);
 
@@ -38,8 +36,7 @@ export default function TeacherClassesPage() {
           grouped[st.class_id].push(st);
         });
         setStudentsByClass(grouped);
-      }
-      setIsLoading(false);
+        setIsLoading(false);
     }
 
     load();

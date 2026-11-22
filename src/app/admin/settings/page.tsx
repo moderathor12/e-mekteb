@@ -9,15 +9,24 @@ import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { Settings, Save, School, ShieldCheck } from 'lucide-react';
 import { Profile } from '@/types';
+import { getSchoolName, setSchoolNameSetting } from '@/lib/config';
 
 export default function AdminSettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [schoolName, setSchoolName] = useState(process.env.NEXT_PUBLIC_SCHOOL_NAME || '1 nömrəli Tam Orta Məktəb');
+  const [schoolName, setSchoolName] = useState('1 nömrəli Tam Orta Məktəb');
   const [academicYear, setAcademicYear] = useState('2026-2027');
   const [contactEmail, setContactEmail] = useState('admin@mekteb.edu.az');
   const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
+    setSchoolName(getSchoolName());
+    if (typeof window !== 'undefined') {
+      const savedYear = localStorage.getItem('academic_year');
+      if (savedYear) setAcademicYear(savedYear);
+      const savedEmail = localStorage.getItem('contact_email');
+      if (savedEmail) setContactEmail(savedEmail);
+    }
+
     async function load() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -33,6 +42,13 @@ export default function AdminSettingsPage() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
+    if (schoolName.trim()) {
+      setSchoolNameSetting(schoolName.trim());
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('academic_year', academicYear.trim());
+      localStorage.setItem('contact_email', contactEmail.trim());
+    }
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
   };

@@ -7,9 +7,9 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
-import { GraduationCap, ArrowRight, ShieldCheck } from 'lucide-react';
-
-import { APP_CONFIG } from '@/lib/config';
+import { GraduationCap, ArrowRight, BookOpen, ShieldCheck, User } from 'lucide-react';
+import { APP_CONFIG, getSchoolName } from '@/lib/config';
+import { setCachedProfile } from '@/lib/auth-cache';
 
 function LoginFormContent() {
   const router = useRouter();
@@ -29,7 +29,7 @@ function LoginFormContent() {
     try {
       const supabase = createClient();
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim(),
         password,
       });
 
@@ -40,13 +40,17 @@ function LoginFormContent() {
       if (data.user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role, is_active')
+          .select('*')
           .eq('id', data.user.id)
           .single();
 
         if (profile && !profile.is_active) {
           router.push('/pending-approval');
           return;
+        }
+
+        if (profile) {
+          setCachedProfile(profile);
         }
 
         if (redirectTo) {
@@ -87,7 +91,7 @@ function LoginFormContent() {
             type="email"
             autoComplete="email"
             required
-            placeholder="ad@mekteb.edu.az"
+            placeholder="valideyn@gmail.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -95,12 +99,10 @@ function LoginFormContent() {
 
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="block text-sm font-medium text-slate-700">
-              Şifrə
-            </label>
+            <label className="block text-sm font-medium text-slate-700">Şifrə</label>
             <Link
               href="/forgot-password"
-              className="text-xs text-indigo-600 hover:text-indigo-500 font-medium"
+              className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
             >
               Şifrəni unutmusunuz?
             </Link>
@@ -116,7 +118,12 @@ function LoginFormContent() {
         </div>
 
         <div className="pt-2">
-          <Button type="submit" variant="primary" className="w-full" isLoading={isLoading}>
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-full justify-center"
+            isLoading={isLoading}
+          >
             Daxil ol <ArrowRight className="w-4 h-4 ml-1.5" />
           </Button>
         </div>
@@ -134,11 +141,13 @@ function LoginFormContent() {
         </p>
       </div>
 
-      <div className="mt-6 bg-slate-50 rounded-xl p-3 border border-slate-100 flex items-start gap-2.5 text-xs text-slate-500">
-        <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-        <span>
-          Müəllim və rəhbərlik hesabları məktəb rəhbərliyi tərəfindən verilir. Valideynlər sərbəst qeydiyyatdan keçib övlad kodunu daxil edə bilər.
-        </span>
+      <div className="mt-6 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-slate-500">
+        <Link href="/teacher/login" className="text-slate-600 hover:text-indigo-600 font-medium flex items-center gap-1">
+          <BookOpen className="w-3.5 h-3.5 text-indigo-600" /> Müəllim Portalı Girişi
+        </Link>
+        <Link href="/admin/login" className="text-slate-600 hover:text-purple-600 font-medium flex items-center gap-1">
+          <ShieldCheck className="w-3.5 h-3.5 text-purple-600" /> İnzibatçı (Admin) Girişi
+        </Link>
       </div>
     </div>
   );
@@ -152,10 +161,13 @@ export default function LoginPage() {
           <GraduationCap className="w-8 h-8" />
         </div>
         <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-          {APP_CONFIG.name} Portalı
+          {APP_CONFIG.name} — Valideyn Portalı
         </h2>
+        <p className="mt-1 text-xs uppercase tracking-wider font-semibold text-indigo-600">
+          {getSchoolName()}
+        </p>
         <p className="mt-1 text-sm text-slate-500">
-          Məktəb qiymətləndirmə jurnalı və valideyn kabineti
+          Övladınızın formativ qiymətləndirmə jurnalına baxış
         </p>
       </div>
 

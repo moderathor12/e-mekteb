@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { UserCheck, Search, CalendarCheck, History } from 'lucide-react';
 import { Profile, Student, SchoolClass } from '@/types';
 import { formatClassName } from '@/lib/config';
+import { getCachedProfile } from '@/lib/auth-cache';
 
 export default function TeacherStudentsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -21,22 +22,18 @@ export default function TeacherStudentsPage() {
 
   useEffect(() => {
     async function load() {
+      const prof = await getCachedProfile();
+      setProfile(prof);
+
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        setProfile(prof);
-
-        const [stRes, clsRes] = await Promise.all([
-          supabase.from('students').select('*, class:classes(*)').eq('is_archived', false).order('first_name'),
-          supabase.from('classes').select('*').eq('is_archived', false).order('grade_level'),
-        ]);
+      const [stRes, clsRes] = await Promise.all([
+        supabase.from('students').select('*, class:classes(*)').eq('is_archived', false).order('first_name'),
+        supabase.from('classes').select('*').eq('is_archived', false).order('grade_level'),
+      ]);
 
         setStudents(stRes.data || []);
         setClasses(clsRes.data || []);
-      }
-      setIsLoading(false);
+        setIsLoading(false);
     }
 
     load();

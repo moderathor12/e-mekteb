@@ -7,6 +7,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { TScaleForm } from '@/components/assessment/TScaleForm';
 import { saveAssessment } from '@/lib/data/assessments';
 import { Profile, SchoolClass, Subject, Student } from '@/types';
+import { getCachedProfile } from '@/lib/auth-cache';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -25,28 +26,20 @@ function NewAssessmentContent() {
 
   useEffect(() => {
     async function load() {
+      const prof = await getCachedProfile();
+      setProfile(prof);
+
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: prof } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        setProfile(prof);
-
-        const [clsRes, subRes, stRes] = await Promise.all([
-          supabase.from('classes').select('*').eq('is_archived', false).order('grade_level'),
-          supabase.from('subjects').select('*').eq('is_archived', false).order('name'),
-          supabase.from('students').select('*').eq('is_archived', false).order('first_name'),
-        ]);
+      const [clsRes, subRes, stRes] = await Promise.all([
+        supabase.from('classes').select('*').eq('is_archived', false).order('grade_level'),
+        supabase.from('subjects').select('*').eq('is_archived', false).order('name'),
+        supabase.from('students').select('*').eq('is_archived', false).order('first_name'),
+      ]);
 
         setClasses(clsRes.data || []);
         setSubjects(subRes.data || []);
         setStudents(stRes.data || []);
-      }
-      setIsLoading(false);
+        setIsLoading(false);
     }
 
     load();

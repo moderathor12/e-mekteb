@@ -26,7 +26,7 @@ export default function ParentAssessmentDetailPage({ params }: { params: Promise
         // Supabase RLS yalnız valideynin təsdiqlənmiş övladına aid və statusu 'published' olan qeydi qaytaracaq!
         const { data: asm, error } = await supabase
           .from('assessments')
-          .select('*, student:students(*), subject:subjects(*), class:classes(*), teacher:profiles(*), feedback_items(*)')
+          .select('*, student:students(*), subject:subjects(*), class:classes(*), teacher:profiles!teacher_id(*), feedback_items(*)')
           .eq('id', resolvedParams.id)
           .single();
 

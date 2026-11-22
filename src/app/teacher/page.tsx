@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Profile, Assessment, SchoolClass } from '@/types';
 import { formatClassName } from '@/lib/config';
+import { getCachedProfile } from '@/lib/auth-cache';
 
 export default function TeacherDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -31,16 +32,11 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     async function loadData() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const prof = await getCachedProfile();
+      setProfile(prof);
 
-      if (user) {
-        const { data: prof } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        setProfile(prof);
+      if (prof) {
+        const supabase = createClient();
 
         // Sinifləri yüklə
         const { data: cls } = await supabase

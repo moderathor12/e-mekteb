@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { UserCheck, Plus, Search, Edit, Trash2, Key } from 'lucide-react';
 import { Profile, Student, SchoolClass } from '@/types';
 import { formatClassName } from '@/lib/config';
+import { getCachedProfile } from '@/lib/auth-cache';
 
 export default function AdminStudentsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -32,14 +33,9 @@ export default function AdminStudentsPage() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        setProfile(prof);
-        await fetchData();
-      }
+      const prof = await getCachedProfile();
+      setProfile(prof);
+      await fetchData();
       setIsLoading(false);
     }
 

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Profile, ParentConnectionRequest } from '@/types';
 import { formatClassName } from '@/lib/config';
+import { getCachedProfile } from '@/lib/auth-cache';
 
 export default function AdminParentRequestsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -19,14 +20,9 @@ export default function AdminParentRequestsPage() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        setProfile(prof);
-        await fetchRequests();
-      }
+      const prof = await getCachedProfile();
+      setProfile(prof);
+      await fetchRequests();
       setIsLoading(false);
     }
 
@@ -35,11 +31,14 @@ export default function AdminParentRequestsPage() {
 
   const fetchRequests = async () => {
     const supabase = createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('parent_connection_requests')
-      .select('*, parent:profiles(*), class:classes(*)')
+      .select('*, parent:profiles!parent_id(*), class:classes(*)')
       .order('created_at', { ascending: false });
 
+    if (error) {
+      console.error('Error fetching parent requests:', error);
+    }
     setRequests(data || []);
   };
 
@@ -179,7 +178,11 @@ export default function AdminParentRequestsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded">
-                        {r.class?.name ? formatClassName(r.class.name) : 'Təyin edilməyib'}
+                        {r.class?.name
+                          ? formatClassName(r.class.name)
+                          : r.student_code
+                          ? formatClassName(r.student_code)
+                          : 'Təyin edilməyib'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-xs text-slate-500">

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Profile, Student, Assessment } from '@/types';
 import { formatClassName } from '@/lib/config';
+import { getCachedProfile } from '@/lib/auth-cache';
 
 export default function ParentDashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -32,18 +33,17 @@ export default function ParentDashboardPage() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const prof = await getCachedProfile();
+      setProfile(prof);
 
-      if (user) {
-        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        setProfile(prof);
+      if (prof) {
+        const supabase = createClient();
 
         // 1. Təsdiqlənmiş övladları yüklə (parent_student_links vasitəsilə)
         const { data: links } = await supabase
           .from('parent_student_links')
           .select('*, student:students(*, class:classes(*))')
-          .eq('parent_id', user.id)
+          .eq('parent_id', prof.id)
           .eq('status', 'approved');
 
         const studentList = (links?.map((l) => l.student).filter(Boolean) || []) as Student[];
@@ -59,7 +59,7 @@ export default function ParentDashboardPage() {
         const { count: pendingCount } = await supabase
           .from('parent_connection_requests')
           .select('*', { count: 'exact', head: true })
-          .eq('parent_id', user.id)
+          .eq('parent_id', prof.id)
           .eq('status', 'pending');
 
         setPendingRequestsCount(pendingCount || 0);
@@ -74,7 +74,7 @@ export default function ParentDashboardPage() {
     const supabase = createClient();
     const { data: asm } = await supabase
       .from('assessments')
-      .select('*, subject:subjects(*), class:classes(*), teacher:profiles(*), feedback_items(*)')
+      .select('*, subject:subjects(*), class:classes(*), teacher:profiles!teacher_id(*), feedback_items(*)')
       .eq('student_id', childId)
       .eq('status', 'published')
       .order('assessment_date', { ascending: false });

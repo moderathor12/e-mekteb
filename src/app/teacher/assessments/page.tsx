@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Plus, Search, Filter, Eye, Printer, Edit, Trash2 } from 'lucide-react';
 import { Profile, Assessment, SchoolClass, Subject } from '@/types';
 import { formatClassName } from '@/lib/config';
+import { getCachedProfile } from '@/lib/auth-cache';
 
 export default function TeacherAssessmentsHistoryPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -27,23 +28,19 @@ export default function TeacherAssessmentsHistoryPage() {
 
   useEffect(() => {
     async function load() {
+      const prof = await getCachedProfile();
+      setProfile(prof);
+
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        setProfile(prof);
-
-        const [cls, sub] = await Promise.all([
-          supabase.from('classes').select('*').eq('is_archived', false),
-          supabase.from('subjects').select('*').eq('is_archived', false),
-        ]);
+      const [cls, sub] = await Promise.all([
+        supabase.from('classes').select('*').eq('is_archived', false),
+        supabase.from('subjects').select('*').eq('is_archived', false),
+      ]);
         setClasses(cls.data || []);
         setSubjects(sub.data || []);
 
         await fetchAssessments();
-      }
-      setIsLoading(false);
+        setIsLoading(false);
     }
 
     load();

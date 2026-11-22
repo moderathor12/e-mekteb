@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types';
 import { LogOut, User, Bell, GraduationCap, School } from 'lucide-react';
-import { APP_CONFIG } from '@/lib/config';
+import { APP_CONFIG, getSchoolName } from '@/lib/config';
+import { clearProfileCache } from '@/lib/auth-cache';
 
 interface NavbarProps {
   profile?: Profile | null;
@@ -15,10 +16,29 @@ interface NavbarProps {
 export function Navbar({ profile }: NavbarProps) {
   const router = useRouter();
   const supabase = createClient();
+  const [schoolName, setSchoolName] = useState<string>(APP_CONFIG.schoolName);
+
+  useEffect(() => {
+    setSchoolName(getSchoolName());
+    const handler = () => setSchoolName(getSchoolName());
+    window.addEventListener('school_settings_updated', handler);
+    window.addEventListener('storage', handler);
+    return () => {
+      window.removeEventListener('school_settings_updated', handler);
+      window.removeEventListener('storage', handler);
+    };
+  }, []);
 
   const handleSignOut = async () => {
+    clearProfileCache();
     await supabase.auth.signOut();
-    router.push('/login');
+    if (profile?.role === 'teacher') {
+      router.push('/teacher/login');
+    } else if (profile?.role === 'admin') {
+      router.push('/admin/login');
+    } else {
+      router.push('/login');
+    }
     router.refresh();
   };
 
@@ -50,7 +70,7 @@ export function Navbar({ profile }: NavbarProps) {
           </Link>
           <div className="hidden md:flex items-center text-xs text-slate-400 pl-4 border-l border-slate-200 ml-4 gap-1.5">
             <School className="w-4 h-4 text-slate-400" />
-            <span>{APP_CONFIG.schoolName}</span>
+            <span>{schoolName}</span>
           </div>
         </div>
 

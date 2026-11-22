@@ -29,3 +29,18 @@ export function formatClassName(name?: string | null): string {
   const trimmed = name.trim();
   return trimmed.toLowerCase().includes('sinif') ? trimmed : `${trimmed} sinfi`;
 }
+
+export function getSchoolName(): string {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('school_name');
+    if (saved && saved.trim()) return saved.trim();
+  }
+  return APP_CONFIG.schoolName;
+}
+
+export function setSchoolNameSetting(name: string): void {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('school_name', name.trim());
+    window.dispatchEvent(new Event('school_settings_updated'));
+  }
+}

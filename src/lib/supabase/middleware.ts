@@ -9,8 +9,19 @@ export async function updateSession(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-  // Əgər Supabase konfiqurasiyası hələ daxil edilməyibsə, xəta vermədən növbəti səhifəyə keç
   if (!supabaseUrl || !supabaseAnonKey) {
+    return supabaseResponse;
+  }
+
+  const path = request.nextUrl.pathname;
+
+  // Next.js prefetch sorğularını dərhal buraxırıq (artıq şəbəkə gecikməsinin qarşısını almaq üçün)
+  const isPrefetch =
+    request.headers.get('next-router-prefetch') ||
+    request.headers.get('purpose') === 'prefetch' ||
+    request.headers.get('x-middleware-prefetch');
+
+  if (isPrefetch) {
     return supabaseResponse;
   }
 
@@ -31,45 +42,74 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
+  // Marşrut kateqoriyaları
+  const isAuthRoute =
+    path === '/login' ||
+    path === '/register' ||
+    path === '/forgot-password' ||
+    path === '/reset-password' ||
+    path === '/teacher/login' ||
+    path === '/admin/login';
+
+  const isAdminRoute = path.startsWith('/admin') && path !== '/admin/login';
+  const isTeacherRoute = path.startsWith('/teacher') && path !== '/teacher/login';
+  const isParentRoute = path.startsWith('/parent');
+  const isProtectedRoute = isAdminRoute || isTeacherRoute || isParentRoute;
+
+  // Əgər qorunan marşrut və ya auth səhifəsi deyilsə (məsələn: əsas səhifə `/`), dərhal davam et
+  if (!isProtectedRoute && !isAuthRoute) {
+    return supabaseResponse;
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
-
-  // Qorunan marşrutlar
-  const isAuthRoute = path.startsWith('/login') || path.startsWith('/register') || path.startsWith('/forgot-password');
-  const isAdminRoute = path.startsWith('/admin');
-  const isTeacherRoute = path.startsWith('/teacher');
-  const isParentRoute = path.startsWith('/parent');
-  const isProtectedRoute = isAdminRoute || isTeacherRoute || isParentRoute;
-
-  // Əgər istifadəçi daxil olmayıbsa və qorunan səhifəyə daxil olmaq istəyirsə
+  // İstifadəçi daxil olmayıbsa və qorunan səhifəyə daxil olmaq istəyirsə
   if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
+    if (isAdminRoute) {
+      url.pathname = '/admin/login';
+    } else if (isTeacherRoute) {
+      url.pathname = '/teacher/login';
+    } else {
+      url.pathname = '/login';
+    }
     url.searchParams.set('redirectTo', path);
     return NextResponse.redirect(url);
   }
 
-  // İstifadəçi daxil olubsa, profilini və rolunu yoxla
+  // İstifadəçi daxil olubsa rolunu müəyyən edirik
   if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role, is_active')
-      .eq('id', user.id)
-      .single();
+    // Əvvəlcə sürətli cookie keşindən oxuyuruq (0ms)
+    let role = request.cookies.get('app_user_role')?.value;
 
-    const role = profile?.role;
-    const isActive = profile?.is_active ?? true;
+    if (!role) {
+      // Yoxdursa bazadan bir dəfə oxuyub cookie-yə yazırıq
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, is_active')
+        .eq('id', user.id)
+        .single();
 
-    if (!isActive && path !== '/pending-approval') {
-      const url = request.nextUrl.clone();
-      url.pathname = '/pending-approval';
-      return NextResponse.redirect(url);
+      const resolvedRole: string = profile?.role || 'parent';
+      role = resolvedRole;
+      const isActive = profile?.is_active ?? true;
+
+      if (!isActive && path !== '/pending-approval') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/pending-approval';
+        return NextResponse.redirect(url);
+      }
+
+      supabaseResponse.cookies.set('app_user_role', resolvedRole, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: 'lax',
+      });
     }
 
-    // Əgər auth səhifələrinə (login/register) daxil olursa, öz panelinə yönləndir
+    // Əgər auth səhifələrinə daxil olursa, öz panelinə yönləndir
     if (isAuthRoute) {
       const url = request.nextUrl.clone();
       if (role === 'admin') url.pathname = '/admin';

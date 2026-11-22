@@ -5,7 +5,7 @@ import { Assessment, FeedbackItem } from '@/types';
 import { Badge } from '@/components/ui/Badge';
 import { CheckCircle2, AlertCircle, Calendar, BookOpen, GraduationCap, Printer, User } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { APP_CONFIG } from '@/lib/config';
+import { APP_CONFIG, getSchoolName } from '@/lib/config';
 
 interface TScaleDocumentViewProps {
   assessment: Assessment;
@@ -42,7 +42,7 @@ export function TScaleDocumentView({ assessment, showPrintButton = true }: TScal
         {/* Başlıq */}
         <div className="text-center pb-6 border-b-2 border-slate-900">
           <span className="text-xs uppercase tracking-widest font-bold text-slate-500 block mb-1">
-            {APP_CONFIG.schoolName}
+            {getSchoolName()}
           </span>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 uppercase tracking-tight">
             {APP_CONFIG.documentTitle}

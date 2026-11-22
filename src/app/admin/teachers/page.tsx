@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Users, Plus, BookOpen, GraduationCap, Link as LinkIcon, Trash2 } from 'lucide-react';
 import { Profile, SchoolClass, Subject, TeacherAssignment } from '@/types';
 import { formatClassName } from '@/lib/config';
+import { getCachedProfile } from '@/lib/auth-cache';
 
 export default function AdminTeachersPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -28,15 +29,9 @@ export default function AdminTeachersPage() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        setProfile(prof);
-
-        await fetchData();
-      }
+      const prof = await getCachedProfile();
+      setProfile(prof);
+      await fetchData();
       setIsLoading(false);
     }
 
@@ -49,7 +44,7 @@ export default function AdminTeachersPage() {
       supabase.from('profiles').select('*').in('role', ['teacher', 'admin']).order('first_name'),
       supabase.from('classes').select('*').eq('is_archived', false).order('grade_level'),
       supabase.from('subjects').select('*').eq('is_archived', false).order('name'),
-      supabase.from('teacher_assignments').select('*, teacher:profiles(*), class:classes(*), subject:subjects(*)'),
+      supabase.from('teacher_assignments').select('*, teacher:profiles!teacher_id(*), class:classes(*), subject:subjects(*)'),
     ]);
 
     setTeachers(tchs.data || []);
