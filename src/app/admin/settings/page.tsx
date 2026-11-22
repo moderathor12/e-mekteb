@@ -42,7 +42,7 @@ export default function AdminSettingsPage() {
       <div className="space-y-6 max-w-2xl mx-auto">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Sistem Parametrləri</h1>
-          <p className="text-sm text-slate-500">Məktəb parametrləri və T-Şkala konfiqurasiyası</p>
+          <p className="text-sm text-slate-500">Məktəb parametrləri və platforma konfiqurasiyası</p>
         </div>
 
         {isSaved && (
@@ -75,7 +75,7 @@ export default function AdminSettingsPage() {
             </div>
           </Card>
 
-          <Card title="T-Şkala Standartları" subtitle="Qiymətləndirmə prinsipləri">
+          <Card title="Qiymətləndirmə Standartları" subtitle="Tədris və qiymətləndirmə prinsipləri">
             <div className="space-y-3 text-xs text-slate-600">
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
                 <strong className="text-slate-900 block mb-1">Məktəb miqyası:</strong>
@@ -83,7 +83,7 @@ export default function AdminSettingsPage() {
               </div>
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
                 <strong className="text-slate-900 block mb-1">Formativ Qiymətləndirmə prinsipi:</strong>
-                T-Şkala formativ qiymətləndirmə sistemi bal və ya rəqəmsal qiymət hesablamır, yalnız keyfiyyət yönümlü müsbət tərəfləri (+), inkişaf sahələrini (-) və növbəti addımları qeydə alır.
+                Formativ qiymətləndirmə sistemi bal və ya rəqəmsal qiymət hesablamır, yalnız keyfiyyət yönümlü müsbət tərəfləri (+), inkişaf sahələrini (-) və növbəti addımları qeydə alır.
               </div>
             </div>
           </Card>

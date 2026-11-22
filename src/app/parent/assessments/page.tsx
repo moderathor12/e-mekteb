@@ -81,7 +81,7 @@ export default function ParentAssessmentsPage() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Qiymətləndirmələr</h1>
             <p className="text-sm text-slate-500">
-              Müəllimlər tərəfindən yazılmış rəsmi T-Şkala vərəqələri
+              Müəllimlər tərəfindən yazılmış rəsmi qiymətləndirmə vərəqələri
             </p>
           </div>
 
@@ -135,7 +135,7 @@ export default function ParentAssessmentsPage() {
                 <th className="px-6 py-3.5">Mövzu / Standart</th>
                 <th className="px-6 py-3.5">Tarix</th>
                 <th className="px-6 py-3.5">Müəllim</th>
-                <th className="px-6 py-3.5 text-right">T-Şkala Vərəqi</th>
+                <th className="px-6 py-3.5 text-right">Jurnal Vərəqi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">

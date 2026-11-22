@@ -75,7 +75,7 @@ export default function TeacherAssessmentsHistoryPage() {
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Qiymətləndirmə Tarixçəsi</h1>
             <p className="text-sm text-slate-500">
-              Bütün fərdi T-Şkala jurnalı qeydləri, axtarış və arxiv
+              Bütün fərdi jurnal qeydləri, axtarış və arxiv
             </p>
           </div>
           <Link href="/teacher/assessments/new">
@@ -196,7 +196,7 @@ export default function TeacherAssessmentsHistoryPage() {
                         <div className="flex items-center justify-end gap-2">
                           <Link href={`/teacher/assessments/${item.id}`}>
                             <button
-                              title="T-Şkala vərəqinə bax və çap et"
+                              title="Jurnal vərəqinə bax və çap et"
                               className="p-1.5 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50"
                             >
                               <Eye className="w-4 h-4" />

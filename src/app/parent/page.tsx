@@ -112,7 +112,7 @@ export default function ParentDashboardPage() {
               Salam, {profile ? `${profile.first_name} valideyn` : 'Valideyn'}!
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              Övladınızın məktəbdəki gündəlik fərdi T-Şkala qiymətləndirmə nəticələri
+              Övladınızın məktəbdəki gündəlik fərdi formativ qiymətləndirmə nəticələri
             </p>
           </div>
 
@@ -216,7 +216,7 @@ export default function ParentDashboardPage() {
               </div>
             </div>
 
-            {/* Ən Son T-Şkala Qiymətləndirməsi */}
+            {/* Ən Son Formativ Qiymətləndirmə */}
             {latestAssessment ? (
               <div className="bg-white rounded-2xl border-2 border-indigo-200 p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-slate-100 gap-2">
@@ -295,7 +295,7 @@ export default function ParentDashboardPage() {
             {/* Tarixçə Cədvəli */}
             <Card
               title="Qiymətləndirmə Tarixçəsi"
-              subtitle="Tədris müddətində yazılmış bütün T-Şkala qeydləri"
+              subtitle="Tədris müddətində yazılmış bütün qiymətləndirmə qeydləri"
               action={
                 <Link href="/parent/assessments" className="text-xs font-semibold text-indigo-600 hover:underline">
                   Hamısına bax

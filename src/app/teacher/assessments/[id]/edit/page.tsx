@@ -95,7 +95,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">T-Şkala Qiymətləndirməsini Redaktə Et</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Qiymətləndirməni Redaktə Et</h1>
             <p className="text-sm text-slate-500">Mövcud formativ qiymətləndirmə məlumatlarını yeniləyin</p>
           </div>
         </div>

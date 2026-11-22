@@ -86,7 +86,7 @@ export default function TeacherDashboard() {
               Xoş gəlmisiniz, {profile ? `${profile.first_name} müəllim` : 'Müəllim'}!
             </h1>
             <p className="text-sm text-slate-500 mt-1">
-              Fərdi T-Şkala formativ qiymətləndirmələrini idarə edin və şagird inkişafını qeydə alın.
+              Fərdi formativ qiymətləndirmələri idarə edin və şagird inkişafını qeydə alın.
             </p>
           </div>
 
@@ -201,11 +201,11 @@ export default function TeacherDashboard() {
             )}
           </div>
 
-          {/* Son T-Şkala Qiymətləndirmələri */}
+          {/* Son Qiymətləndirmələr */}
           <div className="lg:col-span-2">
             <Card
               title="Son Fərdi Qiymətləndirmələr"
-              subtitle="Son daxil edilmiş T-Şkala jurnalı qeydləri"
+              subtitle="Son daxil edilmiş formativ jurnal qeydləri"
               action={
                 <Link href="/teacher/assessments" className="text-xs text-indigo-600 font-semibold hover:underline">
                   Bütün tarixçə

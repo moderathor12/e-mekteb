@@ -177,7 +177,7 @@ export default function AdminDashboardPage() {
             </div>
           </Card>
 
-          {/* Son Yazılmış T-Şkala Qiymətləndirmələri */}
+          {/* Son Yazılmış Qiymətləndirmələr */}
           <Card
             title="Məktəb Üzrə Son Qiymətləndirmələr"
             subtitle="Müəllimlərin fərdi jurnal qeydləri"

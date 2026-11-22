@@ -129,7 +129,7 @@ export default function TeacherStudentsPage() {
                       <div className="flex items-center justify-end gap-2">
                         <Link href={`/teacher/assessments/new?class=${st.class_id}&student=${st.id}`}>
                           <Button variant="primary" size="sm" className="gap-1.5">
-                            <CalendarCheck className="w-3.5 h-3.5" /> T-Şkala Qiymətləndir
+                            <CalendarCheck className="w-3.5 h-3.5" /> Qiymətləndir
                           </Button>
                         </Link>
                       </div>

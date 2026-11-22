@@ -103,7 +103,7 @@ export default function ParentConnectPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Şagird Əlaqələndirmə Müraciəti</h1>
           <p className="text-sm text-slate-500">
-            Övladınızın fərdi T-Şkala jurnalına baxmaq üçün məktəb kodunu daxil edin
+            Övladınızın fərdi qiymətləndirmə jurnalına baxmaq üçün məktəb kodunu daxil edin
           </p>
         </div>
 

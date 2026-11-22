@@ -58,7 +58,7 @@ function NewAssessmentContent() {
       const newId = await saveAssessment(formData);
       alert(
         status === 'published'
-          ? 'T-Şkala qiymətləndirməsi uğurla dərc edildi və valideynə əlçatan oldu!'
+          ? 'Formativ qiymətləndirmə uğurla dərc edildi və valideynə əlçatan oldu!'
           : 'Qiymətləndirmə qaralama olaraq yadda saxlanıldı.'
       );
       router.push(`/teacher/assessments/${newId}`);
@@ -81,7 +81,7 @@ function NewAssessmentContent() {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Yeni Fərdi T-Şkala Qiymətləndirməsi</h1>
+            <h1 className="text-2xl font-bold text-slate-900">Yeni Fərdi Qiymətləndirmə</h1>
             <p className="text-sm text-slate-500">
               Şagirdin nailiyyətlərini və çətinliklərini fərdi jurnal vərəqinə qeyd edin
             </p>
