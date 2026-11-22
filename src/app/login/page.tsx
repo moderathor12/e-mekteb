@@ -163,9 +163,6 @@ export default function LoginPage() {
         <h2 className="text-2xl font-bold tracking-tight text-slate-900">
           {APP_CONFIG.name} — Valideyn Portalı
         </h2>
-        <p className="mt-1 text-xs uppercase tracking-wider font-semibold text-indigo-600">
-          {getSchoolName()}
-        </p>
         <p className="mt-1 text-sm text-slate-500">
           Övladınızın formativ qiymətləndirmə jurnalına baxış
         </p>

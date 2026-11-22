@@ -157,9 +157,6 @@ export default function AdminLoginPage() {
         <h2 className="mt-4 text-center text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           Məktəb İdarəetmə Portalı
         </h2>
-        <p className="mt-1 text-center text-xs uppercase tracking-wider font-semibold text-purple-600">
-          {getSchoolName()}
-        </p>
         <p className="mt-1 text-center text-sm text-slate-500">
           {APP_CONFIG.name} — İnzibatçı və Rəhbərlik Mərkəzi
         </p>

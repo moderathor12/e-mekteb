@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { BookOpen, ArrowRight, Shield, User } from 'lucide-react';
-import { APP_CONFIG, getSchoolName } from '@/lib/config';
+import { APP_CONFIG } from '@/lib/config';
 import { setCachedProfile } from '@/lib/auth-cache';
 
 function TeacherLoginFormContent() {
@@ -129,16 +129,7 @@ function TeacherLoginFormContent() {
         </div>
       </form>
 
-      <div className="mt-6 border-t border-slate-100 pt-6 text-center">
-        <p className="text-sm text-slate-600">
-          Müəllim hesabınız yoxdur?{' '}
-          <Link href="/teacher/register" className="font-semibold text-indigo-600 hover:text-indigo-500">
-            Müəllim Qeydiyyatı
-          </Link>
-        </p>
-      </div>
-
-      <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+      <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
         <Link href="/login" className="text-slate-600 hover:text-indigo-600 flex items-center gap-1 font-medium">
           <User className="w-3.5 h-3.5" /> Valideyn Portalı Girişi
         </Link>
@@ -162,9 +153,6 @@ export default function TeacherLoginPage() {
         <h2 className="mt-4 text-center text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
           Müəllim Portalı
         </h2>
-        <p className="mt-1 text-center text-xs uppercase tracking-wider font-semibold text-indigo-600">
-          {getSchoolName()}
-        </p>
         <p className="mt-1 text-center text-sm text-slate-500">
           Fərdi formativ qiymətləndirmə və sinif idarəetmə sistemi
         </p>

@@ -13,7 +13,7 @@ import { getSchoolName, setSchoolNameSetting } from '@/lib/config';
 
 export default function AdminSettingsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [schoolName, setSchoolName] = useState('1 nömrəli Tam Orta Məktəb');
+  const [schoolName, setSchoolName] = useState('');
   const [academicYear, setAcademicYear] = useState('2026-2027');
   const [contactEmail, setContactEmail] = useState('admin@mekteb.edu.az');
   const [isSaved, setIsSaved] = useState(false);

@@ -68,10 +68,12 @@ export function Navbar({ profile }: NavbarProps) {
               <span className="text-xs text-slate-400 block font-normal -mt-0.5">Formativ Qiymətləndirmə</span>
             </div>
           </Link>
-          <div className="hidden md:flex items-center text-xs text-slate-400 pl-4 border-l border-slate-200 ml-4 gap-1.5">
-            <School className="w-4 h-4 text-slate-400" />
-            <span>{schoolName}</span>
-          </div>
+          {schoolName ? (
+            <div className="hidden md:flex items-center text-xs text-slate-400 pl-4 border-l border-slate-200 ml-4 gap-1.5">
+              <School className="w-4 h-4 text-slate-400" />
+              <span>{schoolName}</span>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-4">
