@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { GraduationCap, ArrowRight, ShieldCheck } from 'lucide-react';
 
+import { APP_CONFIG } from '@/lib/config';
+
 function LoginFormContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -150,7 +152,7 @@ export default function LoginPage() {
           <GraduationCap className="w-8 h-8" />
         </div>
         <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-          T-Şkala Portalı
+          {APP_CONFIG.name} Portalı
         </h2>
         <p className="mt-1 text-sm text-slate-500">
           Məktəb qiymətləndirmə jurnalı və valideyn kabineti

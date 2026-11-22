@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types';
 import { LogOut, User, Bell, GraduationCap, School } from 'lucide-react';
+import { APP_CONFIG } from '@/lib/config';
 
 interface NavbarProps {
   profile?: Profile | null;
@@ -43,13 +44,13 @@ export function Navbar({ profile }: NavbarProps) {
               <GraduationCap className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-indigo-600">T-Şkala</span>
+              <span className="text-indigo-600">{APP_CONFIG.name}</span>
               <span className="text-xs text-slate-400 block font-normal -mt-0.5">Formativ Qiymətləndirmə</span>
             </div>
           </Link>
           <div className="hidden md:flex items-center text-xs text-slate-400 pl-4 border-l border-slate-200 ml-4 gap-1.5">
             <School className="w-4 h-4 text-slate-400" />
-            <span>{process.env.NEXT_PUBLIC_SCHOOL_NAME || '1 nömrəli Tam Orta Məktəb'}</span>
+            <span>{APP_CONFIG.schoolName}</span>
           </div>
         </div>
 

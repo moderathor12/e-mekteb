@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { GraduationCap, ArrowRight, ShieldCheck, BookOpen, Users, CheckCircle2, Award } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
+import { APP_CONFIG } from '@/lib/config';
 
 export default function HomePage() {
   return (
@@ -13,8 +14,8 @@ export default function HomePage() {
               <GraduationCap className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-xl font-bold text-slate-900">T-Şkala</span>
-              <span className="text-xs text-slate-500 block font-normal -mt-1">Məktəb Qiymətləndirmə Portalı</span>
+              <span className="text-xl font-bold text-slate-900">{APP_CONFIG.name}</span>
+              <span className="text-xs text-slate-500 block font-normal -mt-1">{APP_CONFIG.tagline}</span>
             </div>
           </div>
 
@@ -34,13 +35,13 @@ export default function HomePage() {
         <section className="py-16 sm:py-24 text-center px-4 max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-100 text-xs font-semibold text-indigo-700 mb-6">
             <Award className="w-4 h-4 text-indigo-600" />
-            Rəsmi T-Şkala Formativ Qiymətləndirmə Standartı
+            Rəsmi Formativ Qiymətləndirmə Standartı
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
             Şagird nailiyyətlərini <span className="text-indigo-600">fərdi qaydada</span> qiymətləndirin və valideynlərlə bölüşün
           </h1>
           <p className="mt-5 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto">
-            Ənənəvi kağız T-Şkala jurnalının tam rəqəmsallaşdırılmış forması. Müəllimlər fərdi müşahidələri qeyd edir, valideynlər isə yalnız öz övladının inkişafını təhlükəsiz şəkildə izləyir.
+            Ənənəvi formativ qiymətləndirmə jurnalının tam rəqəmsallaşdırılmış forması. Müəllimlər fərdi müşahidələri qeyd edir, valideynlər isə yalnız öz övladının inkişafını təhlükəsiz şəkildə izləyir.
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -96,7 +97,7 @@ export default function HomePage() {
       </main>
 
       <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-        <p>© 2026 T-Şkala — Məktəb Formativ Qiymətləndirmə Portalı. Bütün hüquqlar qorunur.</p>
+        <p>© 2026 {APP_CONFIG.name} — {APP_CONFIG.tagline}. Bütün hüquqlar qorunur.</p>
       </footer>
     </div>
   );

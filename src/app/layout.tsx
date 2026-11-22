@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { APP_CONFIG } from '@/lib/config';
 
 export const metadata: Metadata = {
-  title: 'T-Şkala — Məktəb Qiymətləndirmə Portalı',
-  description: 'T-Şkala formativ qiymətləndirmə jurnalı və valideyn məlumatlandırma platforması',
+  title: `${APP_CONFIG.name} — ${APP_CONFIG.tagline}`,
+  description: 'Formativ qiymətləndirmə jurnalı və valideyn məlumatlandırma platforması',
 };
 
 export default function RootLayout({
