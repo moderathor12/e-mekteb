@@ -10,16 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
 import { UserPlus, CheckCircle2 } from 'lucide-react';
 import { Profile, SchoolClass } from '@/types';
-
-// 1-11 arası bütün siniflər (A, B, C, D bölmələri ilə)
-const ALL_GRADES = Array.from({ length: 11 }, (_, i) => {
-  const grade = i + 1;
-  return {
-    grade,
-    label: `${grade}-ci siniflər`,
-    classes: ['A', 'B', 'C', 'D'].map((letter) => `${grade}${letter}`),
-  };
-});
+import { GRADE_OPTIONS } from '@/lib/config';
 
 export default function ParentConnectPage() {
   const router = useRouter();
@@ -28,7 +19,7 @@ export default function ParentConnectPage() {
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [selectedClassName, setSelectedClassName] = useState('5A');
+  const [selectedClassName, setSelectedClassName] = useState('5-ci sinif');
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -71,18 +62,21 @@ export default function ParentConnectPage() {
         throw new Error('Zəhmət olmasa sinfi seçin.');
       }
 
-      // Verilənlər bazasındakı uyğun sinfi tapırıq (və ya yoxdursa yaradırıq)
+      // Seçilən sinfin nömrəsini çıxarırıq (məs: "5-ci sinif" -> 5)
+      const gradeNum = parseInt(selectedClassName.match(/\d+/)?.[0] || '5', 10);
+
+      // Verilənlər bazasındakı uyğun sinfi tapırıq (ad və ya dərəcə üzrə)
       let targetClass = dbClasses.find(
-        (c) => c.name.toUpperCase() === selectedClassName.toUpperCase()
+        (c) =>
+          c.name.trim().toLowerCase() === selectedClassName.trim().toLowerCase() ||
+          c.grade_level === gradeNum
       );
 
       if (!targetClass) {
-        const gradeMatch = selectedClassName.match(/\d+/);
-        const gradeNum = gradeMatch ? parseInt(gradeMatch[0], 10) : 5;
         const { data: newCls } = await supabase
           .from('classes')
           .insert({
-            name: selectedClassName.toUpperCase(),
+            name: selectedClassName,
             grade_level: gradeNum,
             academic_year: '2026-2027',
           })
@@ -94,7 +88,7 @@ export default function ParentConnectPage() {
       // Müraciəti qeyd edirik
       const { error: reqErr } = await supabase.from('parent_connection_requests').insert({
         parent_id: profile.id,
-        student_code: selectedClassName.toUpperCase(), // baza uyğunluğu üçün sinif adını saxlayırıq
+        student_code: selectedClassName, // baza uyğunluğu üçün sinif adını saxlayırıq
         student_first_name: trimmedFirst,
         student_last_name: trimmedLast,
         class_id: targetClass?.id || null,
@@ -161,7 +155,7 @@ export default function ParentConnectPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Sinif (1 - 11 arası bütün siniflər) *
+                    Sinif (1 - 11 arası seçim) *
                   </label>
                   <select
                     required
@@ -169,14 +163,10 @@ export default function ParentConnectPage() {
                     onChange={(e) => setSelectedClassName(e.target.value)}
                     className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500"
                   >
-                    {ALL_GRADES.map((group) => (
-                      <optgroup key={group.grade} label={group.label}>
-                        {group.classes.map((clsName) => (
-                          <option key={clsName} value={clsName}>
-                            {clsName} sinfi
-                          </option>
-                        ))}
-                      </optgroup>
+                    {GRADE_OPTIONS.map((item) => (
+                      <option key={item.name} value={item.name}>
+                        {item.name}
+                      </option>
                     ))}
                   </select>
                 </div>

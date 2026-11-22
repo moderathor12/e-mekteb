@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { UserCheck, Search, CalendarCheck, History } from 'lucide-react';
 import { Profile, Student, SchoolClass } from '@/types';
+import { formatClassName } from '@/lib/config';
 
 export default function TeacherStudentsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -79,7 +80,7 @@ export default function TeacherStudentsPage() {
                 <option value="">Bütün siniflər</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} sinfi
+                    {formatClassName(c.name)}
                   </option>
                 ))}
               </select>

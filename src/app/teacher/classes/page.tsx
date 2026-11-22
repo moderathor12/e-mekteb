@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { GraduationCap, Users, CalendarCheck, ArrowRight } from 'lucide-react';
 import { Profile, SchoolClass, Student } from '@/types';
+import { formatClassName } from '@/lib/config';
 
 export default function TeacherClassesPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -66,11 +67,11 @@ export default function TeacherClassesPage() {
                 <Card key={cls.id} className="hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 font-extrabold text-lg flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 font-extrabold text-xs flex items-center justify-center text-center p-1 leading-tight">
                         {cls.name}
                       </div>
                       <div>
-                        <h3 className="text-base font-bold text-slate-900">{cls.name} sinfi</h3>
+                        <h3 className="text-base font-bold text-slate-900">{formatClassName(cls.name)}</h3>
                         <p className="text-xs text-slate-500">{cls.grade_level}-ci sinif • {cls.academic_year}</p>
                       </div>
                     </div>

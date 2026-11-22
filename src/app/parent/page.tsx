@@ -20,6 +20,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { Profile, Student, Assessment } from '@/types';
+import { formatClassName } from '@/lib/config';
 
 export default function ParentDashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -181,7 +182,7 @@ export default function ParentDashboardPage() {
                   <h3 className="text-base font-bold text-slate-900">
                     {currentChild.first_name} {currentChild.last_name}
                   </h3>
-                  <span className="text-xs text-indigo-600 font-semibold">{currentChild.class?.name} sinfi</span>
+                  <span className="text-xs text-indigo-600 font-semibold">{formatClassName(currentChild.class?.name)}</span>
                 </div>
               </div>
 

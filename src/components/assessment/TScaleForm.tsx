@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { SchoolClass, Subject, Student } from '@/types';
+import { formatClassName } from '@/lib/config';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -156,7 +157,7 @@ export function TScaleForm({
               <option value="">Sinif seçin</option>
               {classes.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} ({c.grade_level}-ci sinif)
+                  {formatClassName(c.name)}
                 </option>
               ))}
             </select>

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Users, UserPlus, Clock, CheckCircle2, ChevronRight } from 'lucide-react';
 import { Profile, Student, ParentConnectionRequest } from '@/types';
+import { formatClassName } from '@/lib/config';
 
 export default function ParentChildrenPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -85,7 +86,7 @@ export default function ParentChildrenPage() {
                         {st.first_name} {st.last_name}
                       </h3>
                       <span className="text-xs text-indigo-600 font-semibold block mt-0.5">
-                        {st.class?.name} sinfi
+                        {formatClassName(st.class?.name)}
                       </span>
                     </div>
                     <Badge variant="emerald">Təsdiqlənib</Badge>
@@ -133,7 +134,7 @@ export default function ParentChildrenPage() {
                         {r.student_first_name} {r.student_last_name}
                       </td>
                       <td className="px-6 py-4 text-xs font-semibold text-slate-700">
-                        {r.class?.name ? `${r.class.name} sinfi` : '—'}
+                        {r.class?.name ? formatClassName(r.class.name) : '—'}
                       </td>
                       <td className="px-6 py-4 text-xs text-slate-500">
                         {new Date(r.created_at).toLocaleDateString('az-AZ')}

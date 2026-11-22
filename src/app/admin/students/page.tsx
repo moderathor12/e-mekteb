@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { UserCheck, Plus, Search, Edit, Trash2, Key } from 'lucide-react';
 import { Profile, Student, SchoolClass } from '@/types';
+import { formatClassName } from '@/lib/config';
 
 export default function AdminStudentsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -163,7 +164,7 @@ export default function AdminStudentsPage() {
                 <option value="">Bütün siniflər</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} sinfi
+                    {formatClassName(c.name)}
                   </option>
                 ))}
               </select>
@@ -282,7 +283,7 @@ export default function AdminStudentsPage() {
                 <option value="">Sinif seçin</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} sinfi
+                    {formatClassName(c.name)}
                   </option>
                 ))}
               </select>

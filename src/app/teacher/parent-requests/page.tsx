@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Profile, ParentConnectionRequest } from '@/types';
+import { formatClassName } from '@/lib/config';
 
 export default function TeacherParentRequestsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -161,7 +162,7 @@ export default function TeacherParentRequestsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded">
-                        {req.class?.name ? `${req.class.name} sinfi` : 'Təyin edilməyib'}
+                        {req.class?.name ? formatClassName(req.class.name) : 'Təyin edilməyib'}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-xs text-slate-500">

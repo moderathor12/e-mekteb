@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
 import { Plus, Search, Filter, Eye, Printer, Edit, Trash2 } from 'lucide-react';
 import { Profile, Assessment, SchoolClass, Subject } from '@/types';
+import { formatClassName } from '@/lib/config';
 
 export default function TeacherAssessmentsHistoryPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -105,7 +106,7 @@ export default function TeacherAssessmentsHistoryPage() {
                 <option value="">Bütün siniflər</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} sinfi
+                    {formatClassName(c.name)}
                   </option>
                 ))}
               </select>

@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { GraduationCap, Plus, Edit, Trash2, Users } from 'lucide-react';
 import { Profile, SchoolClass } from '@/types';
+import { formatClassName } from '@/lib/config';
 
 export default function AdminClassesPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -136,11 +137,11 @@ export default function AdminClassesPage() {
               <Card key={c.id}>
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 font-extrabold text-lg flex items-center justify-center">
+                    <span className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 font-extrabold text-xs flex items-center justify-center text-center p-1 leading-tight">
                       {c.name}
                     </span>
                     <div>
-                      <h3 className="font-bold text-slate-900 text-base">{c.name} sinfi</h3>
+                      <h3 className="font-bold text-slate-900 text-base">{formatClassName(c.name)}</h3>
                       <p className="text-xs text-slate-500">{c.grade_level}-ci sinif • {c.academic_year}</p>
                     </div>
                   </div>

@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
 import { Users, Plus, BookOpen, GraduationCap, Link as LinkIcon, Trash2 } from 'lucide-react';
 import { Profile, SchoolClass, Subject, TeacherAssignment } from '@/types';
+import { formatClassName } from '@/lib/config';
 
 export default function AdminTeachersPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -206,7 +207,7 @@ export default function AdminTeachersPage() {
                 <option value="">Sinif seçin</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name} sinfi ({c.grade_level}-ci sinif)
+                    {formatClassName(c.name)}
                   </option>
                 ))}
               </select>

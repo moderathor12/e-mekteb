@@ -19,6 +19,7 @@ import {
   Award
 } from 'lucide-react';
 import { Profile, Assessment, SchoolClass } from '@/types';
+import { formatClassName } from '@/lib/config';
 
 export default function TeacherDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -163,11 +164,11 @@ export default function TeacherDashboard() {
                       className="flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-indigo-50/50 border border-slate-100 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 font-bold text-sm flex items-center justify-center">
+                        <span className="w-9 h-9 rounded-lg bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center text-center p-0.5 leading-tight">
                           {c.name}
                         </span>
                         <div>
-                          <h4 className="text-sm font-semibold text-slate-900">{c.name} sinfi</h4>
+                          <h4 className="text-sm font-semibold text-slate-900">{formatClassName(c.name)}</h4>
                           <span className="text-xs text-slate-500">{c.grade_level}-ci sinif • {c.academic_year}</span>
                         </div>
                       </div>
