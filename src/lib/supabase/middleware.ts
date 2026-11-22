@@ -109,8 +109,28 @@ export async function updateSession(request: NextRequest) {
       });
     }
 
-    // Əgər auth səhifələrinə daxil olursa, öz panelinə yönləndir
-    if (isAuthRoute) {
+    // Əgər istifadəçi artıq daxil olubsa və öz roluna uyğun giriş səhifəsinə girirsə, panelə yönləndir
+    if (path === '/teacher/login') {
+      if (role === 'teacher' || role === 'admin') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/teacher';
+        return NextResponse.redirect(url);
+      }
+      // Valideyn və ya başqa hesabdırsa, müəllim giriş səhifəsini görməyə icazə veririk
+    } else if (path === '/admin/login') {
+      if (role === 'admin') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/admin';
+        return NextResponse.redirect(url);
+      }
+      // İnzibatçı giriş səhifəsini görməyə icazə veririk
+    } else if (path === '/login') {
+      if (role === 'parent') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/parent';
+        return NextResponse.redirect(url);
+      }
+    } else if (path === '/register') {
       const url = request.nextUrl.clone();
       if (role === 'admin') url.pathname = '/admin';
       else if (role === 'teacher') url.pathname = '/teacher';

@@ -25,8 +25,15 @@ interface SidebarProps {
   role?: UserRole;
 }
 
-export function Sidebar({ role = 'teacher' }: SidebarProps) {
+export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
+  const effectiveRole =
+    role ||
+    (pathname.startsWith('/admin')
+      ? 'admin'
+      : pathname.startsWith('/parent')
+      ? 'parent'
+      : 'teacher');
 
   const adminNav = [
     { name: 'İdarə paneli', href: '/admin', icon: LayoutDashboard },
@@ -60,7 +67,7 @@ export function Sidebar({ role = 'teacher' }: SidebarProps) {
     { name: 'Profil', href: '/parent/profile', icon: User },
   ];
 
-  const currentNav = role === 'admin' ? adminNav : role === 'teacher' ? teacherNav : parentNav;
+  const currentNav = effectiveRole === 'admin' ? adminNav : effectiveRole === 'teacher' ? teacherNav : parentNav;
 
   return (
     <aside className="w-64 bg-white border-r border-slate-200 flex-shrink-0 min-h-[calc(100vh-4rem)] hidden md:block no-print">
