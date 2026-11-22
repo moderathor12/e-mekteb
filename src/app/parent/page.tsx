@@ -136,7 +136,7 @@ export default function ParentDashboardPage() {
 
             <Link href="/parent/connect">
               <Button variant="outline" size="sm" className="gap-1.5">
-                <UserPlus className="w-4 h-4" /> Şagird Kodu Daxil Et
+                <UserPlus className="w-4 h-4" /> Şagird Əlaqələndir
               </Button>
             </Link>
           </div>
@@ -150,7 +150,7 @@ export default function ParentDashboardPage() {
             </div>
             <h3 className="text-lg font-bold text-slate-900">Hesabınıza heç bir şagird bağlanmayıb</h3>
             <p className="text-sm text-slate-600 max-w-md mx-auto">
-              Övladınızın formativ qiymətləndirmə jurnalını görmək üçün məktəb tərəfindən sizə təqdim edilmiş unikal şagird kodunu daxil edin.
+              Övladınızın formativ qiymətləndirmə jurnalını görmək üçün şagird məlumatlarını daxil edərək əlaqələndirmə müraciəti göndərin.
             </p>
             {pendingRequestsCount > 0 ? (
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-lg text-sm border border-amber-200">

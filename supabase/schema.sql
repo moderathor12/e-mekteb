@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS public.parent_student_links (
 CREATE TABLE IF NOT EXISTS public.parent_connection_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     parent_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-    student_code TEXT NOT NULL,
+    student_code TEXT DEFAULT '',
     student_first_name TEXT NOT NULL,
     student_last_name TEXT NOT NULL,
     class_id UUID REFERENCES public.classes(id) ON DELETE SET NULL,

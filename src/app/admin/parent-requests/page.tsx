@@ -66,17 +66,33 @@ export default function AdminParentRequestsPage() {
       if (reqError) throw reqError;
 
       if (newStatus === 'approved') {
-        const { data: student } = await supabase
+        const { data: students } = await supabase
           .from('students')
-          .select('id')
-          .eq('student_code', request.student_code.trim())
-          .single();
+          .select('id, first_name, last_name, class_id')
+          .ilike('first_name', request.student_first_name.trim())
+          .ilike('last_name', request.student_last_name.trim());
 
-        if (student) {
+        let studentId = students?.[0]?.id;
+
+        if (!studentId && request.class_id) {
+          const { data: newSt } = await supabase
+            .from('students')
+            .insert({
+              first_name: request.student_first_name.trim(),
+              last_name: request.student_last_name.trim(),
+              class_id: request.class_id,
+              student_code: `SAG-${Math.floor(10000 + Math.random() * 90000)}`,
+            })
+            .select('id')
+            .single();
+          studentId = newSt?.id;
+        }
+
+        if (studentId) {
           await supabase.from('parent_student_links').upsert({
             parent_id: request.parent_id,
-            student_id: student.id,
-            relationship_type: request.relationship_type || 'valideyn',
+            student_id: studentId,
+            relationship_type: 'valideyn',
             status: 'approved',
             approved_by: profile?.id,
             approved_at: new Date().toISOString(),
@@ -128,9 +144,8 @@ export default function AdminParentRequestsPage() {
             <thead className="bg-slate-50 border-b border-slate-200 text-xs text-slate-600 uppercase font-semibold">
               <tr>
                 <th className="px-6 py-3.5">Valideyn</th>
-                <th className="px-6 py-3.5">Şagird Adı</th>
-                <th className="px-6 py-3.5">Şagird Kodu</th>
-                <th className="px-6 py-3.5">Qohumluq</th>
+                <th className="px-6 py-3.5">Şagird Adı, Soyadı</th>
+                <th className="px-6 py-3.5">Sinif</th>
                 <th className="px-6 py-3.5">Tarix</th>
                 <th className="px-6 py-3.5">Status</th>
                 <th className="px-6 py-3.5 text-right">Qərar</th>
@@ -139,13 +154,13 @@ export default function AdminParentRequestsPage() {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
                     Yüklənir...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
                     Müraciət tapılmadı.
                   </td>
                 </tr>
@@ -158,15 +173,13 @@ export default function AdminParentRequestsPage() {
                       </span>
                       <span className="text-xs text-slate-500">{r.parent?.email}</span>
                     </td>
-                    <td className="px-6 py-4 font-medium text-slate-900">
+                    <td className="px-6 py-4 font-bold text-slate-900">
                       {r.student_first_name} {r.student_last_name}
-                      <span className="block text-xs text-slate-400">{r.class?.name ? `${r.class.name} sinfi` : ''}</span>
                     </td>
-                    <td className="px-6 py-4 font-mono font-bold text-xs text-indigo-700">
-                      {r.student_code}
-                    </td>
-                    <td className="px-6 py-4 text-xs text-slate-600">
-                      {r.relationship_type || 'valideyn'}
+                    <td className="px-6 py-4">
+                      <span className="bg-slate-100 text-slate-800 text-xs font-semibold px-2.5 py-1 rounded">
+                        {r.class?.name ? `${r.class.name} sinfi` : 'Təyin edilməyib'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-xs text-slate-500">
                       {new Date(r.created_at).toLocaleDateString('az-AZ')}

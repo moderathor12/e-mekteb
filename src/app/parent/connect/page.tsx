@@ -8,19 +8,27 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
-import { UserPlus, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { UserPlus, CheckCircle2 } from 'lucide-react';
 import { Profile, SchoolClass } from '@/types';
+
+// 1-11 arası bütün siniflər (A, B, C, D bölmələri ilə)
+const ALL_GRADES = Array.from({ length: 11 }, (_, i) => {
+  const grade = i + 1;
+  return {
+    grade,
+    label: `${grade}-ci siniflər`,
+    classes: ['A', 'B', 'C', 'D'].map((letter) => `${grade}${letter}`),
+  };
+});
 
 export default function ParentConnectPage() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [classes, setClasses] = useState<SchoolClass[]>([]);
+  const [dbClasses, setDbClasses] = useState<SchoolClass[]>([]);
 
-  const [studentCode, setStudentCode] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [selectedClassId, setSelectedClassId] = useState('');
-  const [relationshipType, setRelationshipType] = useState('valideyn');
+  const [selectedClassName, setSelectedClassName] = useState('5A');
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -35,8 +43,8 @@ export default function ParentConnectPage() {
         const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         setProfile(prof);
 
-        const { data: cls } = await supabase.from('classes').select('*').eq('is_archived', false).order('grade_level');
-        setClasses(cls || []);
+        const { data: cls } = await supabase.from('classes').select('*').eq('is_archived', false);
+        setDbClasses(cls || []);
       }
     }
 
@@ -52,37 +60,45 @@ export default function ParentConnectPage() {
     try {
       const supabase = createClient();
 
-      // Şagird kodunu yoxla
-      const code = studentCode.trim().toUpperCase();
+      const trimmedFirst = firstName.trim();
+      const trimmedLast = lastName.trim();
 
-      const { data: student, error: stErr } = await supabase
-        .from('students')
-        .select('*')
-        .eq('student_code', code)
-        .maybeSingle();
-
-      if (!student) {
-        throw new Error('Daxil edilmiş şagird kodu ilə məktəb bazasında şagird tapılmadı. Zəhmət olmasa kodu dəqiqləşdirin.');
+      if (!trimmedFirst || !trimmedLast) {
+        throw new Error('Zəhmət olmasa şagirdin ad və soyadını daxil edin.');
       }
 
-      // Ad və ya soyadın uyğunluğunu yoxla (əlavə təhlükəsizlik)
-      const inputFirst = firstName.trim().toLowerCase();
-      const inputLast = lastName.trim().toLowerCase();
-      const dbFirst = student.first_name.toLowerCase();
-      const dbLast = student.last_name.toLowerCase();
-
-      if (!dbFirst.includes(inputFirst) && !dbLast.includes(inputLast)) {
-        throw new Error('Şagirdin adı və ya soyadı şagird kodu ilə uyğun gəlmir.');
+      if (!selectedClassName) {
+        throw new Error('Zəhmət olmasa sinfi seçin.');
       }
 
-      // Müraciəti qeyd et
+      // Verilənlər bazasındakı uyğun sinfi tapırıq (və ya yoxdursa yaradırıq)
+      let targetClass = dbClasses.find(
+        (c) => c.name.toUpperCase() === selectedClassName.toUpperCase()
+      );
+
+      if (!targetClass) {
+        const gradeMatch = selectedClassName.match(/\d+/);
+        const gradeNum = gradeMatch ? parseInt(gradeMatch[0], 10) : 5;
+        const { data: newCls } = await supabase
+          .from('classes')
+          .insert({
+            name: selectedClassName.toUpperCase(),
+            grade_level: gradeNum,
+            academic_year: '2026-2027',
+          })
+          .select()
+          .single();
+        if (newCls) targetClass = newCls;
+      }
+
+      // Müraciəti qeyd edirik
       const { error: reqErr } = await supabase.from('parent_connection_requests').insert({
         parent_id: profile.id,
-        student_code: code,
-        student_first_name: firstName.trim(),
-        student_last_name: lastName.trim(),
-        class_id: selectedClassId || student.class_id,
-        relationship_type: relationshipType,
+        student_code: selectedClassName.toUpperCase(), // baza uyğunluğu üçün sinif adını saxlayırıq
+        student_first_name: trimmedFirst,
+        student_last_name: trimmedLast,
+        class_id: targetClass?.id || null,
+        relationship_type: 'valideyn',
         status: 'pending',
       });
 
@@ -103,7 +119,7 @@ export default function ParentConnectPage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Şagird Əlaqələndirmə Müraciəti</h1>
           <p className="text-sm text-slate-500">
-            Övladınızın fərdi qiymətləndirmə jurnalına baxmaq üçün məktəb kodunu daxil edin
+            Övladınızın formativ qiymətləndirmə jurnalına baxmaq üçün məlumatlarını daxil edin
           </p>
         </div>
 
@@ -124,20 +140,9 @@ export default function ParentConnectPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
-            <Card title="Şagird Məlumatları" subtitle="Məktəb tərəfindən verilmiş məlumatları dəqiq daxil edin">
+            <Card title="Şagird Məlumatları" subtitle="Övladınızın ad, soyad və sinfini daxil edin">
               <div className="space-y-4">
-                <div>
-                  <Input
-                    label="Şagirdin İdentifikasiya Kodu *"
-                    required
-                    placeholder="Məs: TSK-5A-101 və ya SAG-10492"
-                    value={studentCode}
-                    onChange={(e) => setStudentCode(e.target.value)}
-                    helperText="Məktəb rəhbərliyi və ya sinif rəhbəri tərəfindən sizə verilən unikal şagird kodu"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="Şagirdin Adı *"
                     required
@@ -155,32 +160,24 @@ export default function ParentConnectPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Sinif</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Sinif (1 - 11 arası bütün siniflər) *
+                  </label>
                   <select
-                    value={selectedClassId}
-                    onChange={(e) => setSelectedClassId(e.target.value)}
-                    className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 bg-white"
+                    required
+                    value={selectedClassName}
+                    onChange={(e) => setSelectedClassName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 bg-white font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500"
                   >
-                    <option value="">Sinif seçin (istəyə görə)</option>
-                    {classes.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name} sinfi
-                      </option>
+                    {ALL_GRADES.map((group) => (
+                      <optgroup key={group.grade} label={group.label}>
+                        {group.classes.map((clsName) => (
+                          <option key={clsName} value={clsName}>
+                            {clsName} sinfi
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Qohumluq Əlaqəsi</label>
-                  <select
-                    value={relationshipType}
-                    onChange={(e) => setRelationshipType(e.target.value)}
-                    className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 bg-white"
-                  >
-                    <option value="ana">Ana</option>
-                    <option value="ata">Ata</option>
-                    <option value="qəyyum">Qəyyum</option>
-                    <option value="valideyn">Valideyn</option>
                   </select>
                 </div>
 

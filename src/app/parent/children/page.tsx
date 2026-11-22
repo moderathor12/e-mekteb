@@ -84,11 +84,8 @@ export default function ParentChildrenPage() {
                       <h3 className="font-bold text-slate-900 text-base">
                         {st.first_name} {st.last_name}
                       </h3>
-                      <span className="text-xs text-indigo-600 font-semibold block">
+                      <span className="text-xs text-indigo-600 font-semibold block mt-0.5">
                         {st.class?.name} sinfi
-                      </span>
-                      <span className="text-[11px] font-mono text-slate-400 block mt-1">
-                        Kod: {st.student_code}
                       </span>
                     </div>
                     <Badge variant="emerald">Təsdiqlənib</Badge>
@@ -116,7 +113,7 @@ export default function ParentChildrenPage() {
               <thead className="bg-slate-50 border-b border-slate-200 text-xs text-slate-600 uppercase">
                 <tr>
                   <th className="px-6 py-3">Şagird Adı</th>
-                  <th className="px-6 py-3">Şagird Kodu</th>
+                  <th className="px-6 py-3">Sinif</th>
                   <th className="px-6 py-3">Tarix</th>
                   <th className="px-6 py-3">Status</th>
                   <th className="px-6 py-3">Qeyd</th>
@@ -135,8 +132,8 @@ export default function ParentChildrenPage() {
                       <td className="px-6 py-4 font-semibold text-slate-900">
                         {r.student_first_name} {r.student_last_name}
                       </td>
-                      <td className="px-6 py-4 font-mono text-xs text-indigo-700">
-                        {r.student_code}
+                      <td className="px-6 py-4 text-xs font-semibold text-slate-700">
+                        {r.class?.name ? `${r.class.name} sinfi` : '—'}
                       </td>
                       <td className="px-6 py-4 text-xs text-slate-500">
                         {new Date(r.created_at).toLocaleDateString('az-AZ')}
