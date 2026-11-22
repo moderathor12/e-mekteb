@@ -54,14 +54,33 @@ export default function RegisterPage() {
         throw signUpError;
       }
 
-      // Əgər email təsdiqi tələb olunursa və ya birbaşa qeydiyyat uğurludursa
+      if (data?.user) {
+        // Profilin bazaya düşməsini təmin edirik
+        try {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            email: email,
+            first_name: firstName,
+            last_name: lastName,
+            role: 'parent',
+            is_active: true,
+          });
+        } catch (pErr) {
+          console.warn('Profil upsert qeydi:', pErr);
+        }
+      }
+
       setSuccess(true);
       setTimeout(() => {
         router.push('/login');
       }, 2500);
     } catch (err: any) {
       console.error('Qeydiyyat xətası:', err);
-      setError(err.message || 'Qeydiyyat zamanı xəta baş verdi.');
+      let errorMsg = err.message || 'Qeydiyyat zamanı xəta baş verdi.';
+      if (errorMsg.includes('Database error saving new user')) {
+        errorMsg = 'Verilənlər bazası xətası: Zəhmət olmasa Supabase SQL Editor-da yenilənmiş schema.sql skriptini icra edin.';
+      }
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }

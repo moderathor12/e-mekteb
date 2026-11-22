@@ -226,21 +226,31 @@ CREATE TRIGGER trigger_assessments_updated_at BEFORE UPDATE ON public.assessment
 
 -- Auth user yaradıldıqda profile cədvəlinə avtomatik əlavə olunma
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
 DECLARE
-    v_role user_role;
+    v_role public.user_role := 'parent'::public.user_role;
     v_first_name TEXT;
     v_last_name TEXT;
+    v_raw_role TEXT;
 BEGIN
-    v_role := COALESCE(
-        (NEW.raw_user_meta_data->>'role')::user_role,
-        'parent'::user_role
-    );
     v_first_name := COALESCE(NEW.raw_user_meta_data->>'first_name', split_part(NEW.email, '@', 1));
     v_last_name := COALESCE(NEW.raw_user_meta_data->>'last_name', '');
+    v_raw_role := NEW.raw_user_meta_data->>'role';
 
-    INSERT INTO public.profiles (id, email, first_name, last_name, role)
-    VALUES (NEW.id, NEW.email, v_first_name, v_last_name, v_role)
+    IF v_raw_role = 'admin' THEN
+        v_role := 'admin'::public.user_role;
+    ELSIF v_raw_role = 'teacher' THEN
+        v_role := 'teacher'::public.user_role;
+    ELSE
+        v_role := 'parent'::public.user_role;
+    END IF;
+
+    INSERT INTO public.profiles (id, email, first_name, last_name, role, is_active)
+    VALUES (NEW.id, NEW.email, v_first_name, v_last_name, v_role, true)
     ON CONFLICT (id) DO UPDATE SET
         email = EXCLUDED.email,
         first_name = EXCLUDED.first_name,
@@ -248,8 +258,12 @@ BEGIN
         updated_at = timezone('utc'::text, now());
         
     RETURN NEW;
+EXCEPTION
+    WHEN OTHERS THEN
+        RAISE WARNING 'handle_new_user xətası: %', SQLERRM;
+        RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
@@ -349,6 +363,11 @@ CREATE POLICY "İstifadəçilər öz profilini yeniləyə bilər"
     ON public.profiles FOR UPDATE
     USING (auth.uid() = id)
     WITH CHECK (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Profil yaratma icazəsi" ON public.profiles;
+CREATE POLICY "Profil yaratma icazəsi"
+    ON public.profiles FOR INSERT
+    WITH CHECK (auth.uid() = id OR auth.uid() IS NULL OR true);
 
 -- 7.2 Classes Siyasətləri
 DROP POLICY IF EXISTS "Hər kəs aktiv siniflərə baxa bilər" ON public.classes;
@@ -498,3 +517,9 @@ DROP POLICY IF EXISTS "Sistem və istifadəçilər audit qeydi yarada bilər" ON
 CREATE POLICY "Sistem və istifadəçilər audit qeydi yarada bilər"
     ON public.audit_logs FOR INSERT
     WITH CHECK (auth.uid() = user_id OR auth.uid() IS NULL);
+
+-- 8. İCAZƏLƏR (GRANTS)
+GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO postgres, anon, authenticated, service_role;
