@@ -45,11 +45,13 @@ export default function AdminStudentsPage() {
   const fetchData = async () => {
     const supabase = createClient();
     const [stRes, clsRes] = await Promise.all([
-      supabase.from('students').select('*, class:classes(*)').eq('is_archived', false).order('first_name'),
+      supabase.from('students').select('*, class:classes(*)').order('first_name'),
       supabase.from('classes').select('*').eq('is_archived', false).order('grade_level'),
     ]);
 
-    setStudents(stRes.data || []);
+    // Bütün aktiv şagirdləri göstəririk (is_archived true olmayanların hamısı)
+    const activeStudents = (stRes.data || []).filter((s) => s.is_archived !== true);
+    setStudents(activeStudents);
     setClasses(clsRes.data || []);
   };
 
@@ -106,6 +108,7 @@ export default function AdminStudentsPage() {
         class_id: classId,
         student_code: studentCode.trim().toUpperCase(),
         gender,
+        is_archived: false,
       });
 
       if (error) alert(error.message);
@@ -115,10 +118,13 @@ export default function AdminStudentsPage() {
     await fetchData();
   };
 
-  const handleArchive = async (id: string) => {
-    if (!confirm('Bu şagirdi arxivləşdirmək istədiyinizdən əminsiniz?')) return;
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`${name} adlı şagirdi sistemdən silmək istədiyinizdən əminsiniz?`)) return;
     const supabase = createClient();
-    await supabase.from('students').update({ is_archived: true }).eq('id', id);
+    const { error } = await supabase.from('students').delete().eq('id', id);
+    if (error) {
+      await supabase.from('students').update({ is_archived: true }).eq('id', id);
+    }
     await fetchData();
   };
 
@@ -216,17 +222,17 @@ export default function AdminStudentsPage() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => handleOpenEdit(s)}
-                          className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-50"
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 rounded-lg hover:bg-slate-100"
                           title="Redaktə et"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => handleArchive(s.id)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-slate-50"
-                          title="Arxivləşdir"
+                          onClick={() => handleDelete(s.id, `${s.first_name} ${s.last_name}`)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors border border-rose-200"
+                          title="Şagirdi sil"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" /> Sil
                         </button>
                       </div>
                     </td>

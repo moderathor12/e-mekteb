@@ -7,8 +7,9 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
-import { Users, Search, ShieldCheck, ShieldAlert, Check, X } from 'lucide-react';
+import { Users, Search, ShieldCheck, ShieldAlert, Check, X, Trash2 } from 'lucide-react';
 import { Profile, UserRole } from '@/types';
+import { getCachedProfile } from '@/lib/auth-cache';
 
 export default function AdminUsersPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -19,14 +20,9 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-        setProfile(prof);
-        await fetchUsers();
-      }
+      const prof = await getCachedProfile();
+      setProfile(prof);
+      await fetchUsers();
       setIsLoading(false);
     }
 
@@ -55,6 +51,22 @@ export default function AdminUsersPage() {
     const { error } = await supabase.from('profiles').update({ is_active: !currentStatus }).eq('id', userId);
     if (error) alert(error.message);
     else await fetchUsers();
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string, role: string) => {
+    if (role === 'admin') {
+      alert('Administrator hesabını silmək təhlükəsizlik səbəbindən qadağandır!');
+      return;
+    }
+    if (!confirm(`${userName} adlı istifadəçini sistemdən silmək istədiyinizdən əminsiniz?`)) return;
+
+    const supabase = createClient();
+    const { error } = await supabase.from('profiles').delete().eq('id', userId);
+    if (error) {
+      await supabase.from('profiles').update({ is_active: false }).eq('id', userId);
+      alert('İstifadəçi deaktiv edildi (əlaqəli qiymətləndirmə məlumatları qorundu).');
+    }
+    await fetchUsers();
   };
 
   const filtered = users.filter((u) => {
@@ -105,19 +117,20 @@ export default function AdminUsersPage() {
                 <th className="px-6 py-3.5">E-poçt</th>
                 <th className="px-6 py-3.5">Rol</th>
                 <th className="px-6 py-3.5">Status</th>
-                <th className="px-6 py-3.5 text-right">Rolu Dəyiş</th>
+                <th className="px-6 py-3.5">Rolu Dəyiş</th>
+                <th className="px-6 py-3.5 text-right">Əməliyyatlar</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
                     Yüklənir...
                   </td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
                     İstifadəçi tapılmadı.
                   </td>
                 </tr>
@@ -145,7 +158,7 @@ export default function AdminUsersPage() {
                         {u.is_active ? 'Aktiv' : 'Deaktiv'}
                       </button>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4">
                       <select
                         value={u.role}
                         onChange={(e) => handleRoleChange(u.id, e.target.value as UserRole)}
@@ -155,6 +168,19 @@ export default function AdminUsersPage() {
                         <option value="teacher">Müəllim</option>
                         <option value="admin">Administrator</option>
                       </select>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      {u.role === 'admin' ? (
+                        <span className="text-xs text-slate-400 font-medium italic">Qorunur (Admin)</span>
+                      ) : (
+                        <button
+                          onClick={() => handleDeleteUser(u.id, `${u.first_name} ${u.last_name}`, u.role)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors border border-rose-200"
+                          title="İstifadəçini sil"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Sil
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

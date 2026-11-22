@@ -74,14 +74,30 @@ export default function AdminParentRequestsPage() {
 
         let studentId = students?.[0]?.id;
 
-        if (!studentId && request.class_id) {
+        let targetClassId = request.class_id;
+        if (!targetClassId && request.student_code) {
+          const { data: matchedClass } = await supabase
+            .from('classes')
+            .select('id')
+            .ilike('name', request.student_code.trim())
+            .limit(1)
+            .single();
+          targetClassId = matchedClass?.id || null;
+        }
+        if (!targetClassId) {
+          const { data: firstClass } = await supabase.from('classes').select('id').limit(1).single();
+          targetClassId = firstClass?.id || null;
+        }
+
+        if (!studentId && targetClassId) {
           const { data: newSt } = await supabase
             .from('students')
             .insert({
               first_name: request.student_first_name.trim(),
               last_name: request.student_last_name.trim(),
-              class_id: request.class_id,
+              class_id: targetClassId,
               student_code: `SAG-${Math.floor(10000 + Math.random() * 90000)}`,
+              is_archived: false,
             })
             .select('id')
             .single();

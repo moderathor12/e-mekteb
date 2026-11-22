@@ -84,6 +84,26 @@ export default function AdminTeachersPage() {
     await fetchData();
   };
 
+  const handleDeleteTeacher = async (teacherId: string, teacherName: string, role: string) => {
+    if (role === 'admin') {
+      alert('Administrator hesabını silmək təhlükəsizlik səbəbindən qadağandır!');
+      return;
+    }
+    if (!confirm(`${teacherName} adlı müəllimi sistemdən silmək istədiyinizdən əminsiniz?`)) return;
+
+    const supabase = createClient();
+    // first clean up assignments
+    await supabase.from('teacher_assignments').delete().eq('teacher_id', teacherId);
+    const { error } = await supabase.from('profiles').delete().eq('id', teacherId);
+    if (error) {
+      await supabase.from('profiles').update({ is_active: false }).eq('id', teacherId);
+      alert('Müəllim deaktiv edildi (əlaqəli qiymətləndirmə qeydləri qorundu).');
+    } else {
+      alert('Müəllim uğurla silindi.');
+    }
+    await fetchData();
+  };
+
   return (
     <DashboardLayout profile={profile}>
       <div className="space-y-6">
@@ -106,18 +126,19 @@ export default function AdminTeachersPage() {
                 <th className="px-6 py-3.5">E-poçt</th>
                 <th className="px-6 py-3.5">Rol</th>
                 <th className="px-6 py-3.5">Təyin Olunduğu Siniflər və Fənlər</th>
+                <th className="px-6 py-3.5 text-right">Əməliyyatlar</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
                     Yüklənir...
                   </td>
                 </tr>
               ) : teachers.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-slate-400">
+                  <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
                     Müəllim tapılmadı.
                   </td>
                 </tr>
@@ -158,6 +179,19 @@ export default function AdminTeachersPage() {
                             ))
                           )}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {t.role === 'admin' ? (
+                          <span className="text-xs text-slate-400 font-medium italic">Qorunur (Admin)</span>
+                        ) : (
+                          <button
+                            onClick={() => handleDeleteTeacher(t.id, `${t.first_name} ${t.last_name}`, t.role)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors border border-rose-200"
+                            title="Müəllimi sil"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Sil
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );
