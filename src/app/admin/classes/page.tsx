@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
-import { GraduationCap, Plus, Edit, Trash2, Users } from 'lucide-react';
-import { Profile, SchoolClass } from '@/types';
+import { GraduationCap, Plus, Edit, Trash2, Users, UserPlus, ChevronRight } from 'lucide-react';
+import { Profile, SchoolClass, Student } from '@/types';
 import { formatClassName } from '@/lib/config';
 import { getCachedProfile } from '@/lib/auth-cache';
+import { syncApprovedParentRequests } from '@/lib/sync-students';
 
 export default function AdminClassesPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -19,12 +20,17 @@ export default function AdminClassesPage() {
   const [studentCounts, setStudentCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
 
-  // Modal
+  // Modal (Sinif əlavə/redaktə)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<SchoolClass | null>(null);
   const [name, setName] = useState('');
   const [gradeLevel, setGradeLevel] = useState('5');
   const [academicYear, setAcademicYear] = useState('2026-2027');
+
+  // Sinfin şagirdlərinə baxış modalı
+  const [selectedClassForStudents, setSelectedClassForStudents] = useState<SchoolClass | null>(null);
+  const [classStudents, setClassStudents] = useState<Student[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -38,6 +44,9 @@ export default function AdminClassesPage() {
   }, []);
 
   const fetchClasses = async () => {
+    // Təsdiqlənmiş valideyn müraciətlərini şagirdlər cədvəlinə sinxron edirik
+    await syncApprovedParentRequests();
+
     const supabase = createClient();
     const { data: cls } = await supabase
       .from('classes')
@@ -47,13 +56,45 @@ export default function AdminClassesPage() {
 
     setClasses(cls || []);
 
-    // Şagird sayları
-    const { data: students } = await supabase.from('students').select('class_id').eq('is_archived', false);
+    // Şagird sayları (is_archived true olmayanların hamısını sayırıq)
+    const { data: students } = await supabase.from('students').select('class_id, is_archived');
     const counts: Record<string, number> = {};
-    (students || []).forEach((s) => {
-      counts[s.class_id] = (counts[s.class_id] || 0) + 1;
-    });
+    (students || [])
+      .filter((s) => s.is_archived !== true)
+      .forEach((s) => {
+        counts[s.class_id] = (counts[s.class_id] || 0) + 1;
+      });
     setStudentCounts(counts);
+  };
+
+  const handleOpenClassStudents = async (c: SchoolClass) => {
+    setSelectedClassForStudents(c);
+    setIsLoadingStudents(true);
+    const supabase = createClient();
+    const { data: st } = await supabase
+      .from('students')
+      .select('*')
+      .eq('class_id', c.id)
+      .order('first_name');
+
+    const activeSt = (st || []).filter((s) => s.is_archived !== true);
+    setClassStudents(activeSt);
+    setIsLoadingStudents(false);
+  };
+
+  const handleDeleteStudentInClass = async (id: string, fullName: string) => {
+    if (!confirm(`${fullName} adlı şagirdi sistemdən silmək istədiyinizdən əminsiniz?`)) return;
+
+    const supabase = createClient();
+    const { error } = await supabase.from('students').delete().eq('id', id);
+    if (error) {
+      await supabase.from('students').update({ is_archived: true }).eq('id', id);
+    }
+
+    if (selectedClassForStudents) {
+      await handleOpenClassStudents(selectedClassForStudents);
+    }
+    await fetchClasses();
   };
 
   const handleOpenAdd = () => {
@@ -130,18 +171,24 @@ export default function AdminClassesPage() {
             </div>
           ) : (
             classes.map((c) => (
-              <Card key={c.id}>
+              <div
+                key={c.id}
+                onClick={() => handleOpenClassStudents(c)}
+                className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all cursor-pointer group"
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 font-extrabold text-xs flex items-center justify-center text-center p-1 leading-tight">
+                    <span className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 font-extrabold text-xs flex items-center justify-center text-center p-1 leading-tight group-hover:bg-indigo-600 group-hover:text-white transition-colors">
                       {c.name}
                     </span>
                     <div>
-                      <h3 className="font-bold text-slate-900 text-base">{formatClassName(c.name)}</h3>
+                      <h3 className="font-bold text-slate-900 text-base group-hover:text-indigo-600 transition-colors">
+                        {formatClassName(c.name)}
+                      </h3>
                       <p className="text-xs text-slate-500">{c.grade_level}-ci sinif • {c.academic_year}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => handleOpenEdit(c)}
                       className="p-1.5 text-slate-400 hover:text-indigo-600 rounded-lg hover:bg-slate-50"
@@ -160,12 +207,12 @@ export default function AdminClassesPage() {
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-                  <span className="flex items-center gap-1 font-semibold">
-                    <Users className="w-4 h-4 text-slate-400" /> {studentCounts[c.id] || 0} şagird
+                  <span className="flex items-center gap-1 font-semibold text-indigo-600 group-hover:underline">
+                    <Users className="w-4 h-4" /> {studentCounts[c.id] || 0} şagird • Siyahıya bax →
                   </span>
                   <Badge variant="blue">{c.academic_year}</Badge>
                 </div>
-              </Card>
+              </div>
             ))
           )}
         </div>
@@ -218,6 +265,74 @@ export default function AdminClassesPage() {
               </Button>
             </div>
           </form>
+        </Modal>
+
+        {/* Sinfin Şagirdləri Modalı */}
+        <Modal
+          isOpen={!!selectedClassForStudents}
+          onClose={() => setSelectedClassForStudents(null)}
+          title={`${formatClassName(selectedClassForStudents?.name)} — Şagirdlər Siyahısı`}
+        >
+          <div className="space-y-4">
+            <div className="flex items-center justify-between text-xs text-slate-500 pb-2 border-b border-slate-100">
+              <span>{selectedClassForStudents?.grade_level}-ci sinif • {selectedClassForStudents?.academic_year}</span>
+              <span className="font-semibold text-slate-700">Cəmi: {classStudents.length} şagird</span>
+            </div>
+
+            {isLoadingStudents ? (
+              <div className="py-8 text-center text-slate-400">Şagirdlər yüklənir...</div>
+            ) : classStudents.length === 0 ? (
+              <div className="py-8 text-center">
+                <Users className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                <p className="text-slate-500 text-sm font-medium">Bu sinifdə hələ heç bir şagird qeydiyyatda deyil.</p>
+                <p className="text-slate-400 text-xs mt-1">Valideyn müraciəti təsdiqləndikdə və ya admin tərəfindən əlavə olunduqda burada görünəcək.</p>
+              </div>
+            ) : (
+              <div className="max-h-96 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 text-slate-600 font-semibold uppercase sticky top-0">
+                    <tr>
+                      <th className="px-4 py-2.5">Şagird</th>
+                      <th className="px-4 py-2.5">Kod</th>
+                      <th className="px-4 py-2.5">Cins</th>
+                      <th className="px-4 py-2.5 text-right">Əməliyyat</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {classStudents.map((st) => (
+                      <tr key={st.id} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 font-semibold text-slate-900">
+                          {st.first_name} {st.last_name} {st.father_name ? `(${st.father_name} qızı/oğlu)` : ''}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-indigo-600 font-medium">
+                          {st.student_code}
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">
+                          {st.gender === 'male' ? 'Kişi' : st.gender === 'female' ? 'Qadın' : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteStudentInClass(st.id, `${st.first_name} ${st.last_name}`)}
+                            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 rounded border border-rose-200"
+                            title="Şagirdi sil"
+                          >
+                            <Trash2 className="w-3 h-3" /> Sil
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div className="flex justify-end pt-2">
+              <Button variant="secondary" onClick={() => setSelectedClassForStudents(null)}>
+                Bağla
+              </Button>
+            </div>
+          </div>
         </Modal>
       </div>
     </DashboardLayout>

@@ -26,15 +26,6 @@ export default function ParentChildrenPage() {
         const { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single();
         setProfile(prof);
 
-        // Təsdiqlənmiş övladlar
-        const { data: links } = await supabase
-          .from('parent_student_links')
-          .select('*, student:students(*, class:classes(*))')
-          .eq('parent_id', user.id)
-          .eq('status', 'approved');
-
-        setApprovedChildren((links?.map((l) => l.student).filter(Boolean) || []) as Student[]);
-
         // Bütün müraciətlər
         const { data: reqs } = await supabase
           .from('parent_connection_requests')
@@ -43,6 +34,42 @@ export default function ParentChildrenPage() {
           .order('created_at', { ascending: false });
 
         setRequests(reqs || []);
+
+        // Təsdiqlənmiş övladlar (həm birbaşa linklər, həm də təsdiqlənmiş müraciətlər)
+        const { data: links } = await supabase
+          .from('parent_student_links')
+          .select('*, student:students(*, class:classes(*))')
+          .eq('parent_id', user.id)
+          .eq('status', 'approved');
+
+        const childrenList = (links?.map((l) => l.student).filter(Boolean) || []) as Student[];
+
+        // Əgər təsdiqlənmiş müraciət varsa amma hələ link kimi gəlməyibsə, onu da təsdiqlənmiş kimi göstəririk
+        (reqs || []).forEach((r) => {
+          if (r.status === 'approved') {
+            const alreadyExists = childrenList.some(
+              (c) =>
+                c.first_name.trim().toLowerCase() === r.student_first_name.trim().toLowerCase() &&
+                c.last_name.trim().toLowerCase() === r.student_last_name.trim().toLowerCase()
+            );
+            if (!alreadyExists) {
+              childrenList.push({
+                id: r.id,
+                first_name: r.student_first_name,
+                last_name: r.student_last_name,
+                class_id: r.class_id || '',
+                student_code: r.student_code || 'Təsdiqlənib',
+                gender: 'male',
+                is_archived: false,
+                created_at: r.created_at,
+                updated_at: r.created_at,
+                class: r.class || { name: 'Məktəb Şagirdi', grade_level: 6, academic_year: '2026-2027' },
+              } as unknown as Student);
+            }
+          }
+        });
+
+        setApprovedChildren(childrenList);
       }
       setIsLoading(false);
     }

@@ -8,6 +8,7 @@ import { TScaleForm } from '@/components/assessment/TScaleForm';
 import { saveAssessment } from '@/lib/data/assessments';
 import { Profile, SchoolClass, Subject, Student } from '@/types';
 import { getCachedProfile } from '@/lib/auth-cache';
+import { syncApprovedParentRequests } from '@/lib/sync-students';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -29,17 +30,22 @@ function NewAssessmentContent() {
       const prof = await getCachedProfile();
       setProfile(prof);
 
+      // Təsdiqlənmiş müraciətlər üzrə şagirdlərin bazada olmasını təmin edirik
+      await syncApprovedParentRequests();
+
       const supabase = createClient();
       const [clsRes, subRes, stRes] = await Promise.all([
         supabase.from('classes').select('*').eq('is_archived', false).order('grade_level'),
         supabase.from('subjects').select('*').eq('is_archived', false).order('name'),
-        supabase.from('students').select('*').eq('is_archived', false).order('first_name'),
+        supabase.from('students').select('*').order('first_name'),
       ]);
 
-        setClasses(clsRes.data || []);
-        setSubjects(subRes.data || []);
-        setStudents(stRes.data || []);
-        setIsLoading(false);
+      const activeStudents = (stRes.data || []).filter((s) => s.is_archived !== true);
+
+      setClasses(clsRes.data || []);
+      setSubjects(subRes.data || []);
+      setStudents(activeStudents);
+      setIsLoading(false);
     }
 
     load();

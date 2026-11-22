@@ -10,6 +10,7 @@ import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Profile, ParentConnectionRequest } from '@/types';
 import { formatClassName } from '@/lib/config';
 import { getCachedProfile } from '@/lib/auth-cache';
+import { syncApprovedParentRequests } from '@/lib/sync-students';
 
 export default function TeacherParentRequestsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -29,6 +30,7 @@ export default function TeacherParentRequestsPage() {
   }, []);
 
   const fetchRequests = async () => {
+    await syncApprovedParentRequests();
     const supabase = createClient();
     const { data, error } = await supabase
       .from('parent_connection_requests')
@@ -65,56 +67,9 @@ export default function TeacherParentRequestsPage() {
 
       if (reqError) throw reqError;
 
-      // 2. Əgər təsdiqləndisə, şagirdi tap və parent_student_links cədvəlinə əlavə et
+      // 2. Əgər təsdiqləndisə, şagirdi bazaya və əlaqələrə sinxronizasiya et
       if (newStatus === 'approved') {
-        const { data: students } = await supabase
-          .from('students')
-          .select('id, first_name, last_name, class_id')
-          .ilike('first_name', request.student_first_name.trim())
-          .ilike('last_name', request.student_last_name.trim());
-
-        let studentId = students?.[0]?.id;
-
-        let targetClassId = request.class_id;
-        if (!targetClassId && request.student_code) {
-          const { data: matchedClass } = await supabase
-            .from('classes')
-            .select('id')
-            .ilike('name', request.student_code.trim())
-            .limit(1)
-            .single();
-          targetClassId = matchedClass?.id || null;
-        }
-        if (!targetClassId) {
-          const { data: firstClass } = await supabase.from('classes').select('id').limit(1).single();
-          targetClassId = firstClass?.id || null;
-        }
-
-        if (!studentId && targetClassId) {
-          const { data: newSt } = await supabase
-            .from('students')
-            .insert({
-              first_name: request.student_first_name.trim(),
-              last_name: request.student_last_name.trim(),
-              class_id: targetClassId,
-              student_code: `SAG-${Math.floor(10000 + Math.random() * 90000)}`,
-              is_archived: false,
-            })
-            .select('id')
-            .single();
-          studentId = newSt?.id;
-        }
-
-        if (studentId) {
-          await supabase.from('parent_student_links').upsert({
-            parent_id: request.parent_id,
-            student_id: studentId,
-            relationship_type: 'valideyn',
-            status: 'approved',
-            approved_by: profile?.id,
-            approved_at: new Date().toISOString(),
-          });
-        }
+        await syncApprovedParentRequests();
       }
 
       alert(newStatus === 'approved' ? 'Valideyn müraciəti təsdiqləndi!' : 'Müraciətə imtina edildi.');

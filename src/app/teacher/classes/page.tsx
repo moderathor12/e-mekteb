@@ -10,6 +10,7 @@ import { GraduationCap, Users, CalendarCheck, ArrowRight } from 'lucide-react';
 import { Profile, SchoolClass, Student } from '@/types';
 import { formatClassName } from '@/lib/config';
 import { getCachedProfile } from '@/lib/auth-cache';
+import { syncApprovedParentRequests } from '@/lib/sync-students';
 
 export default function TeacherClassesPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -22,21 +23,25 @@ export default function TeacherClassesPage() {
       const prof = await getCachedProfile();
       setProfile(prof);
 
+      await syncApprovedParentRequests();
+
       const supabase = createClient();
       const [clsRes, stRes] = await Promise.all([
         supabase.from('classes').select('*').eq('is_archived', false).order('grade_level'),
-        supabase.from('students').select('*').eq('is_archived', false).order('first_name'),
+        supabase.from('students').select('*').order('first_name'),
       ]);
 
-        setClasses(clsRes.data || []);
+      setClasses(clsRes.data || []);
 
-        const grouped: Record<string, Student[]> = {};
-        (stRes.data || []).forEach((st) => {
+      const grouped: Record<string, Student[]> = {};
+      (stRes.data || [])
+        .filter((st) => st.is_archived !== true)
+        .forEach((st) => {
           if (!grouped[st.class_id]) grouped[st.class_id] = [];
           grouped[st.class_id].push(st);
         });
-        setStudentsByClass(grouped);
-        setIsLoading(false);
+      setStudentsByClass(grouped);
+      setIsLoading(false);
     }
 
     load();

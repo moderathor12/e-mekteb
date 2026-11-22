@@ -6,7 +6,8 @@ import { formatClassName } from '@/lib/config';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
-import { Plus, Trash2, CheckCircle2, AlertCircle, Save, Send, Sparkles } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
+import { Plus, Trash2, CheckCircle2, AlertCircle, Save, Send, Sparkles, Users, Check, Search } from 'lucide-react';
 
 interface TScaleFormProps {
   classes: SchoolClass[];
@@ -56,8 +57,17 @@ export function TScaleForm({
   const [nextStep, setNextStep] = useState<string>(initialData?.next_step || '');
   const [generalObservation, setGeneralObservation] = useState<string>(initialData?.general_observation || '');
 
+  // Şagird Seçim Modalı üçün state-lər
+  const [isStudentModalOpen, setIsStudentModalOpen] = useState(false);
+  const [studentSearchTerm, setStudentSearchTerm] = useState('');
+  const [modalClassFilter, setModalClassFilter] = useState('');
+
   // Seçilmiş sinfin şagirdləri
-  const classStudents = students.filter((s) => s.class_id === selectedClassId && !s.is_archived);
+  const classStudents = students.filter(
+    (s) => s.class_id === selectedClassId && s.is_archived !== true
+  );
+
+  const selectedStudent = students.find((s) => s.id === selectedStudentId);
 
   // Tez-tez istifadə olunan hazır şablon nümunələri (müəllimlərin işini sürətləndirmək üçün)
   const positiveTemplates = [
@@ -180,7 +190,20 @@ export function TScaleForm({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Şagird (Fərdi Qiymətləndirmə) *</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-slate-700">Şagird (Fərdi Qiymətləndirmə) *</label>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalClassFilter(selectedClassId);
+                  setIsStudentModalOpen(true);
+                }}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors"
+                title="Şagird siyahısını aç və seç"
+              >
+                <Users className="w-3.5 h-3.5" /> Şagird Seç
+              </button>
+            </div>
             <select
               value={selectedStudentId}
               onChange={(e) => setSelectedStudentId(e.target.value)}
@@ -194,7 +217,24 @@ export function TScaleForm({
               ))}
             </select>
             {classStudents.length === 0 && selectedClassId && (
-              <p className="text-xs text-amber-600 mt-1">Bu sinifdə aktiv şagird tapılmadı.</p>
+              <p className="text-xs text-amber-600 mt-1">
+                Bu sinifdə aktiv şagird tapılmadı.{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalClassFilter('');
+                    setIsStudentModalOpen(true);
+                  }}
+                  className="underline font-semibold text-indigo-600 hover:text-indigo-800"
+                >
+                  Şagird siyahısını aç
+                </button>
+              </p>
+            )}
+            {selectedStudent && (
+              <p className="text-xs text-emerald-700 font-semibold mt-1 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Seçildi: {selectedStudent.first_name} {selectedStudent.last_name} ({selectedStudent.student_code})
+              </p>
             )}
           </div>
         </div>
@@ -459,6 +499,137 @@ export function TScaleForm({
           <Send className="w-4 h-4 mr-2" /> Dərc et (Valideynə görünəcək)
         </Button>
       </div>
+
+      {/* Şagird Seçim Modalı */}
+      <Modal
+        isOpen={isStudentModalOpen}
+        onClose={() => setIsStudentModalOpen(false)}
+        title="Qiymətləndirmə üçün Şagird Seçin"
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Sinif üzrə süzgəc</label>
+              <select
+                value={modalClassFilter}
+                onChange={(e) => setModalClassFilter(e.target.value)}
+                className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+              >
+                <option value="">Bütün siniflər ({students.length} şagird)</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {formatClassName(c.name)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Şagird axtarışı</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Ad, soyad və ya kod..."
+                  value={studentSearchTerm}
+                  onChange={(e) => setStudentSearchTerm(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 bg-white"
+                />
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+              </div>
+            </div>
+          </div>
+
+          <div className="max-h-80 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg">
+            {(() => {
+              const filteredList = students.filter((st) => {
+                if (st.is_archived === true) return false;
+                const matchClass = !modalClassFilter || st.class_id === modalClassFilter;
+                const matchSearch =
+                  !studentSearchTerm ||
+                  `${st.first_name} ${st.last_name} ${st.father_name || ''} ${st.student_code}`
+                    .toLowerCase()
+                    .includes(studentSearchTerm.toLowerCase());
+                return matchClass && matchSearch;
+              });
+
+              if (filteredList.length === 0) {
+                return (
+                  <div className="p-8 text-center text-slate-400 text-xs">
+                    Uyğun şagird tapılmadı.
+                  </div>
+                );
+              }
+
+              return filteredList.map((st) => {
+                const stClass = classes.find((c) => c.id === st.class_id);
+                const isSelected = selectedStudentId === st.id;
+                return (
+                  <div
+                    key={st.id}
+                    className={`flex items-center justify-between p-3 transition-colors ${
+                      isSelected ? 'bg-indigo-50/80' : 'hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center">
+                        {st.first_name[0]}
+                        {st.last_name[0]}
+                      </span>
+                      <div>
+                        <div className="font-semibold text-slate-900 text-xs flex items-center gap-1.5">
+                          {st.first_name} {st.last_name}
+                          {st.father_name && (
+                            <span className="text-slate-400 text-[11px] font-normal">
+                              ({st.father_name})
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-500 flex items-center gap-2 mt-0.5">
+                          <span className="font-medium text-indigo-600">
+                            {formatClassName(stClass?.name || 'Sinif təyin olunmayıb')}
+                          </span>
+                          <span>•</span>
+                          <span className="font-mono text-slate-400">{st.student_code}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={isSelected ? 'primary' : 'outline'}
+                      onClick={() => {
+                        setSelectedStudentId(st.id);
+                        if (st.class_id) {
+                          setSelectedClassId(st.class_id);
+                        }
+                        setIsStudentModalOpen(false);
+                      }}
+                      className="gap-1 text-xs py-1 px-3"
+                    >
+                      {isSelected ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" /> Seçildi
+                        </>
+                      ) : (
+                        'Seç'
+                      )}
+                    </Button>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsStudentModalOpen(false)}
+            >
+              Bağla
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

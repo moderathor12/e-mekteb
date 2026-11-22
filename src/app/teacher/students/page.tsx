@@ -11,6 +11,7 @@ import { UserCheck, Search, CalendarCheck, History } from 'lucide-react';
 import { Profile, Student, SchoolClass } from '@/types';
 import { formatClassName } from '@/lib/config';
 import { getCachedProfile } from '@/lib/auth-cache';
+import { syncApprovedParentRequests } from '@/lib/sync-students';
 
 export default function TeacherStudentsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -25,15 +26,18 @@ export default function TeacherStudentsPage() {
       const prof = await getCachedProfile();
       setProfile(prof);
 
+      await syncApprovedParentRequests();
+
       const supabase = createClient();
       const [stRes, clsRes] = await Promise.all([
-        supabase.from('students').select('*, class:classes(*)').eq('is_archived', false).order('first_name'),
+        supabase.from('students').select('*, class:classes(*)').order('first_name'),
         supabase.from('classes').select('*').eq('is_archived', false).order('grade_level'),
       ]);
 
-        setStudents(stRes.data || []);
-        setClasses(clsRes.data || []);
-        setIsLoading(false);
+      const activeStudents = (stRes.data || []).filter((s) => s.is_archived !== true);
+      setStudents(activeStudents);
+      setClasses(clsRes.data || []);
+      setIsLoading(false);
     }
 
     load();

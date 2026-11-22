@@ -12,6 +12,7 @@ import { UserCheck, Plus, Search, Edit, Trash2, Key } from 'lucide-react';
 import { Profile, Student, SchoolClass } from '@/types';
 import { formatClassName } from '@/lib/config';
 import { getCachedProfile } from '@/lib/auth-cache';
+import { syncApprovedParentRequests } from '@/lib/sync-students';
 
 export default function AdminStudentsPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -43,6 +44,9 @@ export default function AdminStudentsPage() {
   }, []);
 
   const fetchData = async () => {
+    // Təsdiqlənmiş müraciətlər üzrə şagirdlərin bazada olmasını təmin edirik
+    await syncApprovedParentRequests();
+
     const supabase = createClient();
     const [stRes, clsRes] = await Promise.all([
       supabase.from('students').select('*, class:classes(*)').order('first_name'),
