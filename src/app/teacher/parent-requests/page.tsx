@@ -54,25 +54,41 @@ export default function TeacherParentRequestsPage() {
     const supabase = createClient();
 
     try {
-      // 1. Müraciətin statusunu yenilə
-      const { error: reqError } = await supabase
-        .from('parent_connection_requests')
-        .update({
-          status: newStatus,
-          reviewer_id: profile?.id,
-          review_notes: notes || null,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq('id', request.id);
+      let rpcHandled = false;
 
-      if (reqError) throw reqError;
+      // 1. Təsdiqləmə zamanı əvvəlcə təhlükəsiz bazanın RPC funksiyasını yoxlayırıq
+      if (newStatus === 'approved') {
+        const { error: rpcErr } = await supabase.rpc('approve_parent_connection_request', {
+          p_request_id: request.id,
+          p_reviewer_id: profile?.id,
+          p_notes: notes || null,
+        });
+        if (!rpcErr) {
+          rpcHandled = true;
+        }
+      }
 
-      // 2. Əgər təsdiqləndisə, şagirdi bazaya və əlaqələrə sinxronizasiya et
+      // 2. RPC olmasa və ya imtina halında standart yeniləmə
+      if (!rpcHandled) {
+        const { error: reqError } = await supabase
+          .from('parent_connection_requests')
+          .update({
+            status: newStatus,
+            reviewer_id: profile?.id,
+            review_notes: notes || null,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq('id', request.id);
+
+        if (reqError) throw reqError;
+      }
+
+      // 3. Əgər təsdiqləndisə, dərhal şagird sinxronizasiyasını təmin et
       if (newStatus === 'approved') {
         await syncApprovedParentRequests();
       }
 
-      alert(newStatus === 'approved' ? 'Valideyn müraciəti təsdiqləndi!' : 'Müraciətə imtina edildi.');
+      alert(newStatus === 'approved' ? 'Valideyn müraciəti təsdiqləndi və şagird sinfə əlavə edildi!' : 'Müraciətə imtina edildi.');
       await fetchRequests();
     } catch (err: any) {
       console.error(err);

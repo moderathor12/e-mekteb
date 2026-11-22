@@ -55,23 +55,38 @@ export default function AdminParentRequestsPage() {
     const supabase = createClient();
 
     try {
-      const { error: reqError } = await supabase
-        .from('parent_connection_requests')
-        .update({
-          status: newStatus,
-          reviewer_id: profile?.id,
-          review_notes: notes || null,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq('id', request.id);
+      let rpcHandled = false;
 
-      if (reqError) throw reqError;
+      if (newStatus === 'approved') {
+        const { error: rpcErr } = await supabase.rpc('approve_parent_connection_request', {
+          p_request_id: request.id,
+          p_reviewer_id: profile?.id,
+          p_notes: notes || null,
+        });
+        if (!rpcErr) {
+          rpcHandled = true;
+        }
+      }
+
+      if (!rpcHandled) {
+        const { error: reqError } = await supabase
+          .from('parent_connection_requests')
+          .update({
+            status: newStatus,
+            reviewer_id: profile?.id,
+            review_notes: notes || null,
+            reviewed_at: new Date().toISOString(),
+          })
+          .eq('id', request.id);
+
+        if (reqError) throw reqError;
+      }
 
       if (newStatus === 'approved') {
         await syncApprovedParentRequests();
       }
 
-      alert(newStatus === 'approved' ? 'Müraciət təsdiqləndi!' : 'Müraciətə imtina edildi.');
+      alert(newStatus === 'approved' ? 'Müraciət təsdiqləndi və şagird sinfə əlavə edildi!' : 'Müraciətə imtina edildi.');
       await fetchRequests();
     } catch (err: any) {
       console.error(err);
