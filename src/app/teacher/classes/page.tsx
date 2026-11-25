@@ -176,7 +176,6 @@ export default function TeacherClassesPage() {
                     <tr>
                       <th className="px-4 py-2.5">Şagird</th>
                       <th className="px-4 py-2.5">Kod</th>
-                      <th className="px-4 py-2.5">Cins</th>
                       <th className="px-4 py-2.5 text-right">Əməliyyatlar</th>
                     </tr>
                   </thead>
@@ -188,9 +187,6 @@ export default function TeacherClassesPage() {
                         </td>
                         <td className="px-4 py-3 font-mono text-indigo-600 font-medium">
                           {st.student_code}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600">
-                          {st.gender === 'male' ? 'Kişi' : st.gender === 'female' ? 'Qadın' : '—'}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="inline-flex items-center gap-2">
