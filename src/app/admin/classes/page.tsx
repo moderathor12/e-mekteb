@@ -14,7 +14,7 @@ import { formatClassName } from '@/lib/config';
 import { getCachedProfile } from '@/lib/auth-cache';
 import { syncApprovedParentRequests, deleteStudentCompletely } from '@/lib/sync-students';
 
-const CLASS_SECTIONS = ['A', 'B', 'C', 'Ç', 'D', 'E', 'Ə', 'F', 'G', 'H', 'R', 'T'];
+const CLASS_SECTIONS = ['A', 'B', 'C', 'Ç', 'D', 'E'];
 
 export default function AdminClassesPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
