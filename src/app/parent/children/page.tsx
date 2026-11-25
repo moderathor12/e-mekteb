@@ -136,7 +136,7 @@ export default function ParentChildrenPage() {
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
             <Clock className="w-5 h-5 text-amber-600" /> Əlaqələndirmə Müraciətləri Tarixçəsi
           </h2>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 border-b border-slate-200 text-xs text-slate-600 uppercase">
                 <tr>

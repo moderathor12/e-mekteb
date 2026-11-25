@@ -328,7 +328,7 @@ export default function AdminClassesPage() {
                 <p className="text-slate-400 text-xs mt-1">Valideyn müraciəti təsdiqləndikdə və ya admin tərəfindən əlavə olunduqda burada görünəcək.</p>
               </div>
             ) : (
-              <div className="max-h-96 overflow-y-auto divide-y divide-slate-100 border border-slate-200 rounded-lg">
+              <div className="max-h-96 overflow-y-auto overflow-x-auto divide-y divide-slate-100 border border-slate-200 rounded-lg">
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-50 text-slate-600 font-semibold uppercase sticky top-0">
                     <tr>
