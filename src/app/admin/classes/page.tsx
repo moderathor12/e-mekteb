@@ -14,6 +14,8 @@ import { formatClassName } from '@/lib/config';
 import { getCachedProfile } from '@/lib/auth-cache';
 import { syncApprovedParentRequests, deleteStudentCompletely } from '@/lib/sync-students';
 
+const CLASS_SECTIONS = ['A', 'B', 'C', 'Ç', 'D', 'E', 'Ə', 'F', 'G', 'H', 'R', 'T'];
+
 export default function AdminClassesPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [classes, setClasses] = useState<SchoolClass[]>([]);
@@ -23,8 +25,9 @@ export default function AdminClassesPage() {
   // Modal (Sinif əlavə/redaktə)
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClass, setEditingClass] = useState<SchoolClass | null>(null);
-  const [name, setName] = useState('');
+  const [name, setName] = useState('5A');
   const [gradeLevel, setGradeLevel] = useState('5');
+  const [section, setSection] = useState('A');
   const [academicYear, setAcademicYear] = useState('2026-2027');
 
   // Sinfin şagirdlərinə baxış modalı
@@ -100,8 +103,9 @@ export default function AdminClassesPage() {
 
   const handleOpenAdd = () => {
     setEditingClass(null);
-    setName('');
     setGradeLevel('5');
+    setSection('A');
+    setName('5A');
     setAcademicYear('2026-2027');
     setIsModalOpen(true);
   };
@@ -110,8 +114,20 @@ export default function AdminClassesPage() {
     setEditingClass(c);
     setName(c.name);
     setGradeLevel(c.grade_level.toString());
+    const match = c.name.trim().match(/^(\d+)\s*([A-ZƏÇĞİÖŞÜa-zəçğıöşü]+)$/);
+    setSection(match ? match[2].toUpperCase() : '');
     setAcademicYear(c.academic_year);
     setIsModalOpen(true);
+  };
+
+  const handleGradeLevelChange = (newGrade: string) => {
+    setGradeLevel(newGrade);
+    setName(section ? `${newGrade}${section}` : newGrade);
+  };
+
+  const handleSectionChange = (newSection: string) => {
+    setSection(newSection);
+    setName(newSection ? `${gradeLevel}${newSection}` : gradeLevel);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -225,29 +241,52 @@ export default function AdminClassesPage() {
           title={editingClass ? 'Sinif Məlumatlarını Yenilə' : 'Yeni Sinif Əlavə Et'}
         >
           <form onSubmit={handleSave} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Sinif pilləsi (1 - 11) *</label>
+                <select
+                  required
+                  value={gradeLevel}
+                  onChange={(e) => handleGradeLevelChange(e.target.value)}
+                  className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 bg-white"
+                >
+                  {Array.from({ length: 11 }, (_, i) => i + 1).map((lvl) => (
+                    <option key={lvl} value={lvl}>
+                      {lvl}-ci sinif
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Sinif kateqoriyası *</label>
+                <select
+                  value={section}
+                  onChange={(e) => handleSectionChange(e.target.value)}
+                  className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 bg-white"
+                >
+                  {CLASS_SECTIONS.map((sec) => (
+                    <option key={sec} value={sec}>
+                      {gradeLevel}{sec} ({sec} bölməsi)
+                    </option>
+                  ))}
+                  {section && !CLASS_SECTIONS.includes(section) && (
+                    <option value={section}>
+                      {gradeLevel}{section} ({section} bölməsi)
+                    </option>
+                  )}
+                  <option value="">Bölməsiz (fərdi ad)</option>
+                </select>
+              </div>
+            </div>
+
             <Input
               label="Sinfin Adı *"
               required
-              placeholder="Məs: 5A, 6B, 10C"
+              placeholder="Məs: 5A, 9B, 10C"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Sinif pilləsi (1 - 11) *</label>
-              <select
-                required
-                value={gradeLevel}
-                onChange={(e) => setGradeLevel(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 bg-white"
-              >
-                {Array.from({ length: 11 }, (_, i) => i + 1).map((lvl) => (
-                  <option key={lvl} value={lvl}>
-                    {lvl}-ci sinif
-                  </option>
-                ))}
-              </select>
-            </div>
 
             <Input
               label="Tədris İli *"
