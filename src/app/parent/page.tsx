@@ -156,7 +156,7 @@ export default function ParentDashboardPage() {
             {pendingRequestsCount > 0 ? (
               <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-lg text-sm border border-amber-200">
                 <Clock className="w-4 h-4" />
-                <span>Göndərdiyiniz {pendingRequestsCount} müraciət hazırda məktəb rəhbərliyinin təsdiqindədir.</span>
+                <span>Göndərdiyiniz {pendingRequestsCount} müraciətin hazırda fənn müəllimi tərəfindən təsdiqi gözlənilir.</span>
               </div>
             ) : (
               <Link href="/parent/connect" className="inline-block mt-2">

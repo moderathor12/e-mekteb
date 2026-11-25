@@ -113,7 +113,7 @@ export default function ParentConnectPage() {
             </div>
             <h3 className="text-lg font-bold text-slate-900">Müraciətiniz Qəbul Olundu!</h3>
             <p className="text-sm text-slate-600">
-              Şagird əlaqələndirmə sorğunuz məktəb rəhbərliyinə və sinif rəhbərinə göndərildi. Təsdiq edildikdən sonra övladınızın bütün qiymətləndirmələri profilinizdə aktivləşəcək.
+              Şagird əlaqələndirmə sorğunuz göndərildi və fənn müəllimi tərəfindən təsdiqi gözlənilir. Təsdiq edildikdən sonra övladınızın bütün qiymətləndirmələri profilinizdə aktivləşəcək.
             </p>
             <Button variant="primary" onClick={() => router.push('/parent')}>
               Əsas səhifəyə qayıt
