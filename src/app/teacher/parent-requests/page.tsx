@@ -85,7 +85,7 @@ export default function TeacherParentRequestsPage() {
 
       // 3. Əgər təsdiqləndisə, dərhal şagird sinxronizasiyasını təmin et
       if (newStatus === 'approved') {
-        await syncApprovedParentRequests();
+        await syncApprovedParentRequests({ force: true });
       }
 
       alert(newStatus === 'approved' ? 'Valideyn müraciəti təsdiqləndi və şagird sinfə əlavə edildi!' : 'Müraciətə imtina edildi.');

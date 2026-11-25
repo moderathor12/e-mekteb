@@ -48,16 +48,14 @@ export default function AdminClassesPage() {
     await syncApprovedParentRequests();
 
     const supabase = createClient();
-    const { data: cls } = await supabase
-      .from('classes')
-      .select('*')
-      .eq('is_archived', false)
-      .order('grade_level');
+    const [{ data: cls }, { data: students }] = await Promise.all([
+      supabase.from('classes').select('*').eq('is_archived', false).order('grade_level'),
+      supabase.from('students').select('class_id, is_archived'),
+    ]);
 
     setClasses(cls || []);
 
     // Şagird sayları (is_archived true olmayanların hamısını sayırıq)
-    const { data: students } = await supabase.from('students').select('class_id, is_archived');
     const counts: Record<string, number> = {};
     (students || [])
       .filter((s) => s.is_archived !== true)

@@ -1,106 +1,175 @@
 import { createClient } from '@/lib/supabase/client';
 import { Student } from '@/types';
 
+let lastSyncAt = 0;
+let inFlightSync: Promise<void> | null = null;
+const SYNC_COOLDOWN_MS = 60_000;
+
 /**
  * Təsdiqlənmiş valideyn müraciətlərini yoxlayır və students / parent_student_links
- * cədvəllərində çatışmayan şagird qeydlərini avtomatik bərpa edir.
+ * cədvəllərində çatışmayan şagird qeydlərini toplu (batch) şəkildə bərpa edir.
  */
-export async function syncApprovedParentRequests(): Promise<void> {
-  const supabase = createClient();
+export async function syncApprovedParentRequests(options?: { force?: boolean }): Promise<void> {
+  if (!options?.force && Date.now() - lastSyncAt < SYNC_COOLDOWN_MS) {
+    return;
+  }
 
-  try {
-    // 1. Yalnız təsdiqlənmiş müraciətləri alırıq
-    const { data: approvedReqs, error: reqErr } = await supabase
-      .from('parent_connection_requests')
-      .select('*')
-      .eq('status', 'approved');
+  if (inFlightSync) {
+    return inFlightSync;
+  }
 
-    if (reqErr || !approvedReqs || approvedReqs.length === 0) return;
+  inFlightSync = (async () => {
+    const supabase = createClient();
 
-    // 2. Mövcud şagirdləri və aktiv sinifləri alırıq
-    const [stRes, clsRes] = await Promise.all([
-      supabase.from('students').select('*'),
-      supabase.from('classes').select('*').order('grade_level'),
-    ]);
+    try {
+      // 1. Bütün lazımi məlumatları paralel şəkildə alırıq
+      const [reqRes, stRes, clsRes, linkRes] = await Promise.all([
+        supabase
+          .from('parent_connection_requests')
+          .select('id, parent_id, student_first_name, student_last_name, student_code, class_id, relationship_type')
+          .eq('status', 'approved'),
+        supabase.from('students').select('id, first_name, last_name'),
+        supabase.from('classes').select('id, name, is_archived, grade_level').order('grade_level'),
+        supabase.from('parent_student_links').select('parent_id, student_id'),
+      ]);
 
-    const existingStudents = stRes.data || [];
-    const availableClasses = (clsRes.data || []).filter((c) => c.is_archived !== true);
-    const defaultClassId = availableClasses[0]?.id || clsRes.data?.[0]?.id;
+      if (reqRes.error || !reqRes.data || reqRes.data.length === 0) {
+        lastSyncAt = Date.now();
+        return;
+      }
 
-    for (const req of approvedReqs) {
-      const fName = (req.student_first_name || '').trim().toLowerCase();
-      const lName = (req.student_last_name || '').trim().toLowerCase();
+      const approvedReqs = reqRes.data;
+      const studentMap = new Map<string, string>();
+      for (const s of stRes.data || []) {
+        const key = `${s.first_name.trim().toLowerCase()}|${s.last_name.trim().toLowerCase()}`;
+        if (!studentMap.has(key)) {
+          studentMap.set(key, s.id);
+        }
+      }
 
-      // Mövcud şagirdi axtarırıq (həm aktiv, həm də arxivdə)
-      let student = existingStudents.find(
-        (s) =>
-          s.first_name.trim().toLowerCase() === fName &&
-          s.last_name.trim().toLowerCase() === lName
+      const existingLinks = new Set<string>(
+        (linkRes.data || []).map((l) => `${l.parent_id}|${l.student_id}`)
       );
 
-      // Əgər şagird bazada ümumiyyətlə yoxdursa və sinif varsa, yaradırıq
-      if (!student && defaultClassId) {
-        let targetClassId = req.class_id;
+      const availableClasses = (clsRes.data || []).filter((c) => c.is_archived !== true);
+      const defaultClassId = availableClasses[0]?.id || clsRes.data?.[0]?.id;
 
-        if (!targetClassId && req.student_code) {
-          const matched = availableClasses.find((c) =>
-            c.name.toLowerCase().includes(req.student_code.toLowerCase())
-          );
-          if (matched) targetClassId = matched.id;
-        }
+      // 2. Çatışmayan şagirdləri müəyyən edirik
+      const studentsToInsert: Array<{
+        first_name: string;
+        last_name: string;
+        class_id: string;
+        student_code: string;
+        is_archived: boolean;
+      }> = [];
+      const pendingClassUpdates: Array<{ reqId: string; classId: string }> = [];
+      const seenNewStudentKeys = new Set<string>();
 
-        if (!targetClassId) {
-          targetClassId = defaultClassId;
-        }
+      for (const req of approvedReqs) {
+        const fName = (req.student_first_name || '').trim();
+        const lName = (req.student_last_name || '').trim();
+        const key = `${fName.toLowerCase()}|${lName.toLowerCase()}`;
 
-        const newCode =
-          req.student_code && req.student_code.startsWith('SAG-')
-            ? req.student_code
-            : `SAG-${Math.floor(10000 + Math.random() * 90000)}`;
+        if (!studentMap.has(key) && !seenNewStudentKeys.has(key) && defaultClassId) {
+          let targetClassId = req.class_id;
 
-        const { data: created, error: crErr } = await supabase
-          .from('students')
-          .insert({
-            first_name: req.student_first_name.trim(),
-            last_name: req.student_last_name.trim(),
+          if (!targetClassId && req.student_code) {
+            const matched = availableClasses.find((c) =>
+              c.name.toLowerCase().includes(req.student_code.toLowerCase())
+            );
+            if (matched) targetClassId = matched.id;
+          }
+
+          if (!targetClassId) {
+            targetClassId = defaultClassId;
+          }
+
+          const newCode =
+            req.student_code && req.student_code.startsWith('SAG-')
+              ? req.student_code
+              : `SAG-${Math.floor(10000 + Math.random() * 90000)}`;
+
+          seenNewStudentKeys.add(key);
+          studentsToInsert.push({
+            first_name: fName,
+            last_name: lName,
             class_id: targetClassId,
             student_code: newCode,
             is_archived: false,
-          })
-          .select('*')
-          .maybeSingle();
-
-        if (created) {
-          student = created;
-          existingStudents.push(created);
+          });
 
           if (!req.class_id && targetClassId) {
-            await supabase
-              .from('parent_connection_requests')
-              .update({ class_id: targetClassId })
-              .eq('id', req.id);
+            pendingClassUpdates.push({ reqId: req.id, classId: targetClassId });
           }
-        } else if (crErr) {
-          console.error('Error creating student from approved request:', crErr);
         }
       }
 
-      // Əgər şagird tapıldısa və ya yaradıldısa, parent_student_links cədvəlində bağlayırıq
-      if (student && req.parent_id) {
-        await supabase.from('parent_student_links').upsert(
-          {
+      // 3. Yalnız çatışmayan şagirdlər varsa tək sorğu ilə əlavə edirik
+      if (studentsToInsert.length > 0) {
+        const { data: createdStudents, error: crErr } = await supabase
+          .from('students')
+          .insert(studentsToInsert)
+          .select('id, first_name, last_name');
+
+        if (crErr) {
+          console.error('Error creating students from approved requests:', crErr);
+        } else {
+          for (const created of createdStudents || []) {
+            const key = `${created.first_name.trim().toLowerCase()}|${created.last_name.trim().toLowerCase()}`;
+            studentMap.set(key, created.id);
+          }
+
+          if (pendingClassUpdates.length > 0) {
+            await Promise.all(
+              pendingClassUpdates.map((u) =>
+                supabase
+                  .from('parent_connection_requests')
+                  .update({ class_id: u.classId })
+                  .eq('id', u.reqId)
+              )
+            );
+          }
+        }
+      }
+
+      // 4. Yalnız çatışmayan valideyn-şagird əlaqələrini tək sorğu ilə upsert edirik
+      const linksToUpsertMap = new Map<
+        string,
+        { parent_id: string; student_id: string; relationship_type: string; status: string }
+      >();
+
+      for (const req of approvedReqs) {
+        if (!req.parent_id) continue;
+        const key = `${(req.student_first_name || '').trim().toLowerCase()}|${(req.student_last_name || '').trim().toLowerCase()}`;
+        const studentId = studentMap.get(key);
+        if (!studentId) continue;
+
+        const linkKey = `${req.parent_id}|${studentId}`;
+        if (!existingLinks.has(linkKey) && !linksToUpsertMap.has(linkKey)) {
+          linksToUpsertMap.set(linkKey, {
             parent_id: req.parent_id,
-            student_id: student.id,
+            student_id: studentId,
             relationship_type: req.relationship_type || 'valideyn',
             status: 'approved',
-          },
-          { onConflict: 'parent_id,student_id' }
-        );
+          });
+        }
       }
+
+      if (linksToUpsertMap.size > 0) {
+        await supabase
+          .from('parent_student_links')
+          .upsert(Array.from(linksToUpsertMap.values()), { onConflict: 'parent_id,student_id' });
+      }
+
+      lastSyncAt = Date.now();
+    } catch (err) {
+      console.error('syncApprovedParentRequests exception:', err);
+    } finally {
+      inFlightSync = null;
     }
-  } catch (err) {
-    console.error('syncApprovedParentRequests exception:', err);
-  }
+  })();
+
+  return inFlightSync;
 }
 
 /**

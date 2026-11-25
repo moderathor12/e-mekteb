@@ -23,10 +23,11 @@ export default function TeacherStudentsPage() {
 
   useEffect(() => {
     async function load() {
-      const prof = await getCachedProfile();
+      const [prof] = await Promise.all([
+        getCachedProfile(),
+        syncApprovedParentRequests(),
+      ]);
       setProfile(prof);
-
-      await syncApprovedParentRequests();
 
       const supabase = createClient();
       const [stRes, clsRes] = await Promise.all([

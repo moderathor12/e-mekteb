@@ -83,7 +83,7 @@ export default function AdminParentRequestsPage() {
       }
 
       if (newStatus === 'approved') {
-        await syncApprovedParentRequests();
+        await syncApprovedParentRequests({ force: true });
       }
 
       alert(newStatus === 'approved' ? 'Müraciət təsdiqləndi və şagird sinfə əlavə edildi!' : 'Müraciətə imtina edildi.');

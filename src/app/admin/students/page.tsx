@@ -34,9 +34,8 @@ export default function AdminStudentsPage() {
 
   useEffect(() => {
     async function load() {
-      const prof = await getCachedProfile();
+      const [prof] = await Promise.all([getCachedProfile(), fetchData()]);
       setProfile(prof);
-      await fetchData();
       setIsLoading(false);
     }
 

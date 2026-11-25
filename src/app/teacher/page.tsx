@@ -38,33 +38,28 @@ export default function TeacherDashboard() {
       if (prof) {
         const supabase = createClient();
 
-        // Sinifləri yüklə
-        const { data: cls } = await supabase
-          .from('classes')
-          .select('*')
-          .eq('is_archived', false);
+        const [
+          { data: cls },
+          { count: stCount },
+          { data: asm },
+          { count: reqCount },
+        ] = await Promise.all([
+          supabase.from('classes').select('*').eq('is_archived', false),
+          supabase.from('students').select('*', { count: 'exact', head: true }).eq('is_archived', false),
+          supabase
+            .from('assessments')
+            .select('*, student:students(*), subject:subjects(*), class:classes(*)')
+            .order('created_at', { ascending: false })
+            .limit(5),
+          supabase
+            .from('parent_connection_requests')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'pending'),
+        ]);
+
         setClasses(cls || []);
-
-        // Şagirdlərin sayı
-        const { count: stCount } = await supabase
-          .from('students')
-          .select('*', { count: 'exact', head: true })
-          .eq('is_archived', false);
         setAssignedStudentsCount(stCount || 0);
-
-        // Son qiymətləndirmələr
-        const { data: asm } = await supabase
-          .from('assessments')
-          .select('*, student:students(*), subject:subjects(*), class:classes(*)')
-          .order('created_at', { ascending: false })
-          .limit(5);
         setRecentAssessments(asm || []);
-
-        // Gözləyən valideyn müraciətləri
-        const { count: reqCount } = await supabase
-          .from('parent_connection_requests')
-          .select('*', { count: 'exact', head: true })
-          .eq('status', 'pending');
         setPendingRequestsCount(reqCount || 0);
       }
       setIsLoading(false);
