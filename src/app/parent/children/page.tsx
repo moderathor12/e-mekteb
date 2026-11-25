@@ -85,11 +85,13 @@ export default function ParentChildrenPage() {
             <h1 className="text-2xl font-bold text-slate-900">Övladlarım</h1>
             <p className="text-sm text-slate-500">Hesabınıza bağlı şagirdlər və müraciət statusları</p>
           </div>
-          <Link href="/parent/connect">
-            <Button variant="primary" className="gap-2">
-              <UserPlus className="w-4 h-4" /> Yeni Şagird Əlaqələndir
-            </Button>
-          </Link>
+          {!isLoading && !requests.some((r) => r.status === 'pending') && (
+            <Link href="/parent/connect">
+              <Button variant="primary" className="gap-2">
+                <UserPlus className="w-4 h-4" /> Yeni Şagird Əlaqələndir
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Təsdiqlənmiş Övladlar */}

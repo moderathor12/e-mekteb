@@ -135,11 +135,13 @@ export default function ParentDashboardPage() {
               </div>
             )}
 
-            <Link href="/parent/connect">
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <UserPlus className="w-4 h-4" /> Şagird Əlaqələndir
-              </Button>
-            </Link>
+            {!isLoading && pendingRequestsCount === 0 && (
+              <Link href="/parent/connect">
+                <Button variant="outline" size="sm" className="gap-1.5">
+                  <UserPlus className="w-4 h-4" /> Şagird Əlaqələndir
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
 

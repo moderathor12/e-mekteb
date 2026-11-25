@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
-import { UserPlus, CheckCircle2, AlertCircle } from 'lucide-react';
+import { UserPlus, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import { Profile, SchoolClass } from '@/types';
 import { formatClassName } from '@/lib/config';
 import { getCachedProfile } from '@/lib/auth-cache';
@@ -17,6 +17,8 @@ export default function ParentConnectPage() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [dbClasses, setDbClasses] = useState<SchoolClass[]>([]);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(true);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -32,16 +34,28 @@ export default function ParentConnectPage() {
       setProfile(prof);
 
       const supabase = createClient();
-      const { data: cls } = await supabase
-        .from('classes')
-        .select('*')
-        .eq('is_archived', false)
-        .order('grade_level');
+      const [clsRes, pendingRes] = await Promise.all([
+        supabase
+          .from('classes')
+          .select('*')
+          .eq('is_archived', false)
+          .order('grade_level'),
+        prof
+          ? supabase
+              .from('parent_connection_requests')
+              .select('id', { count: 'exact', head: true })
+              .eq('parent_id', prof.id)
+              .eq('status', 'pending')
+          : Promise.resolve({ count: 0 }),
+      ]);
 
-      if (cls && cls.length > 0) {
-        setDbClasses(cls);
-        setSelectedClassId(cls[0].id);
+      if (clsRes.data && clsRes.data.length > 0) {
+        setDbClasses(clsRes.data);
+        setSelectedClassId(clsRes.data[0].id);
       }
+
+      setHasPendingRequest((pendingRes.count || 0) > 0);
+      setIsCheckingStatus(false);
     }
 
     load();
@@ -70,6 +84,57 @@ export default function ParentConnectPage() {
       const targetClass = dbClasses.find((c) => c.id === selectedClassId);
       if (!targetClass) {
         throw new Error('Seçilmiş sinif tapılmadı.');
+      }
+
+      // 1. Valideynin öz əlaqələri və müraciətləri arasında yoxlayırıq
+      const [ownReqsRes, ownLinksRes, globalCheckRes] = await Promise.all([
+        supabase
+          .from('parent_connection_requests')
+          .select('id, status, student_first_name, student_last_name')
+          .eq('parent_id', profile.id)
+          .in('status', ['pending', 'approved']),
+        supabase
+          .from('parent_student_links')
+          .select('student:students(first_name, last_name, is_archived)')
+          .eq('parent_id', profile.id)
+          .eq('status', 'approved'),
+        fetch('/api/students/check-duplicate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ firstName: trimmedFirst, lastName: trimmedLast }),
+        })
+          .then((r) => (r.ok ? r.json() : { exists: false }))
+          .catch(() => ({ exists: false })),
+      ]);
+
+      const normalizedFirst = trimmedFirst.toLowerCase();
+      const normalizedLast = trimmedLast.toLowerCase();
+
+      if ((ownReqsRes.data || []).some((r) => r.status === 'pending')) {
+        setHasPendingRequest(true);
+        throw new Error('Hazırda təsdiq gözləyən müraciətiniz var. Təsdiqlənənə qədər yeni sorğu göndərə bilməzsiniz.');
+      }
+
+      const existsInOwnRequests = (ownReqsRes.data || []).some(
+        (r) =>
+          r.student_first_name.trim().toLowerCase() === normalizedFirst &&
+          r.student_last_name.trim().toLowerCase() === normalizedLast
+      );
+
+      const existsInOwnLinks = (ownLinksRes.data || []).some((l: any) => {
+        const st = l.student;
+        return (
+          st &&
+          st.is_archived !== true &&
+          st.first_name?.trim().toLowerCase() === normalizedFirst &&
+          st.last_name?.trim().toLowerCase() === normalizedLast
+        );
+      });
+
+      if (existsInOwnRequests || existsInOwnLinks || globalCheckRes.exists) {
+        throw new Error(
+          `"${trimmedFirst} ${trimmedLast}" adlı şagird artıq sistemdə mövcuddur. Eyni ad və soyadla təkrar sorğu göndərmək mümkün deyil.`
+        );
       }
 
       // Müraciəti qeyd edirik
@@ -106,7 +171,24 @@ export default function ParentConnectPage() {
 
         {error && <Alert type="error">{error}</Alert>}
 
-        {success ? (
+        {isCheckingStatus ? (
+          <Card>
+            <div className="py-8 text-center text-slate-400">Yüklənir...</div>
+          </Card>
+        ) : hasPendingRequest ? (
+          <div className="bg-white p-8 rounded-2xl border border-amber-200 text-center shadow-sm space-y-4">
+            <div className="w-14 h-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto">
+              <Clock className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900">Gözləmədə Olan Müraciətiniz Var</h3>
+            <p className="text-sm text-slate-600">
+              Göndərdiyiniz şagird əlaqələndirmə sorğusunun hazırda fənn müəllimi tərəfindən təsdiqi gözlənilir. Müraciətiniz təsdiqlənənə qədər yeni sorğu göndərə bilməzsiniz.
+            </p>
+            <Button variant="primary" onClick={() => router.push('/parent')}>
+              Əsas səhifəyə qayıt
+            </Button>
+          </div>
+        ) : success ? (
           <div className="bg-white p-8 rounded-2xl border border-slate-200 text-center shadow-sm space-y-4">
             <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-8 h-8" />
